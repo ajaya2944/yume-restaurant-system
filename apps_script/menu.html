@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Asian Dining Yume - Digital Menu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root {
+      --orange: #ff7a1a;
+      --orange-soft: #ffe1c2;
+      --green: #0ba96b;
+      --green-soft: #c3f3dd;
+      --bg: #fff8ef;
+      --text: #1f2933;
+      --muted: #6b7280;
+      --card: #ffffff;
+      --border: #f1e3d2;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #fff0db, #ffe9c5 30%, #fff8ef 70%, #fff);
+      color: var(--text);
+      font-size: 22px;
+      line-height: 1.6;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      padding-bottom: 120px; /* cart bar のための余白 */
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: linear-gradient(135deg, #e65c00, #ff944d);
+      color: white;
+      padding: 14px 14px 10px;   /* ← ここを小さくする */
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    header .top-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;   /* ← ここを 20px くらいに */
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
+
+    header .subtitle {
+      margin-top: 8px;
+      font-size: 14px;
+      opacity: 0.95;
+      font-weight: 500;
+    }
+
+    .badge-pill {
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-size: 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(4px);
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .badge-pill span {
+      font-size: 22px;
+    }
+
+    .order-meta {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 18px;
+    }
+
+    .field label {
+      opacity: 0.95;
+      font-weight: 500;
+    }
+
+    .field input {
+      border-radius: 999px;
+      border: none;
+      padding: 16px 20px;
+      font-size: 22px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
+      min-height: 60px;
+    }
+
+    /* ===== CATEGORY CHIPS ===== */
+    .categories {
+      margin: 20px 0 14px;
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding: 12px 0 14px;
+      scrollbar-width: none;
+    }
+    .categories::-webkit-scrollbar { display: none; }
+     //基本（スマホ・iPhone 用）のフォントサイズを大きくする
+    .chip {
+      flex: 0 0 auto;
+      padding: 16px 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.2);
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: white;
+      cursor: pointer;
+      min-height: 60px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+      font-weight: 500;
+    }
+
+    .chip span.icon {
+      font-size: 24px;
+    }
+
+    .chip.active {
+      background: #fff;
+      color: #b45309;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .chip.active .icon {
+      filter: drop-shadow(0 0 4px rgba(251, 146, 60, 0.9));
+    }
+
+    main {
+      padding: 20px 14px 24px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 26px;
+      font-weight: 600;
+      margin: 14px 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #78350f;
+    }
+
+    .section-title span {
+      font-size: 28px;
+    }
+
+    /* ===== MENU CARDS ===== */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 18px;
+    }
+
+    @media (min-width: 480px) {
+      .menu-grid {
+        grid-template-columns: repeat(2, minmax(210px, 1fr));
+      }
+    }
+
+    @media (min-width: 768px) {
+      .menu-grid {
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .card-img-wrap {
+      position: relative;
+      padding-top: 60%;
+      overflow: hidden;
+    }
+
+    .card-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.03);
+      transition: transform 0.18s ease;
+    }
+
+    .card:hover .card-img {
+      transform: scale(1.08);
+    }
+
+    .card-tag {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #7c2d12;
+      background: rgba(254, 243, 199, 0.9);
+      backdrop-filter: blur(3px);
+    }
+
+    .card-tag.veg {
+      background: rgba(209, 250, 229, 0.95);
+      color: #065f46;
+    }
+
+    .card-body {
+      padding: 16px 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-names {
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .card-names .jp {
+      font-size: 19px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 22px;
+      margin-top: 8px;
+    }
+
+    .price {
+      font-weight: 700;
+      color: #b45309;
+    }
+
+    .badges {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .badge {
+      font-size: 16px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: #4b5563;
+      background: #f9fafb;
+    }
+
+    .badge.spicy {
+      border-color: #f97316;
+      color: #c2410c;
+      background: #fff7ed;
+    }
+
+    .badge.special {
+      border-color: #16a34a;
+      color: #166534;
+      background: #ecfdf3;
+    }
+
+    .card-footer {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .qty-control {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+      background: #f8fafc;
+      min-height: 60px;
+    }
+
+    .qty-btn {
+      border: none;
+      background: transparent;
+      padding: 14px 20px;
+      font-size: 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 60px;
+    }
+
+    .qty-btn:active {
+      background: #e5e7eb;
+    }
+
+    .qty-value {
+      min-width: 50px;
+      text-align: center;
+      font-size: 22px;
+      padding: 0 12px;
+    }
+
+    .btn-add {
+      flex: 1;
+      border: none;
+      border-radius: 999px;
+      padding: 18px 20px;
+      font-size: 22px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--green), #22c55e);
+      color: white;
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+      min-height: 60px;
+    }
+
+    .btn-add:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 6px rgba(16, 185, 129, 0.4);
+    }
+
+    /* ===== CART BAR ===== */
+    .cart-bar {
+      position: fixed;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      z-index: 30;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: white;
+      border-radius: 999px;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(5, 122, 85, 0.55);
+      cursor: pointer;
+      transform-origin: bottom center;
+      transform: scale(0.98);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      min-height: 80px;
+    }
+
+    .cart-bar.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(15px) scale(0.96);
+    }
+
+    .cart-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 20px;
+    }
+
+    .cart-summary .line1 {
+      font-weight: 600;
+      font-size: 22px;
+    }
+
+    .cart-summary .line2 {
+      opacity: 0.9;
+    }
+
+    .cart-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.15);
+      font-size: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      white-space: nowrap;
+    }
+
+    /* ===== MODAL BASE ===== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 40;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #f8fafc;
+      width: 100%;
+      max-width: 540px;
+      border-radius: 24px 24px 0 0;
+      padding: 20px 22px 24px;
+      box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.4);
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .modal-close {
+      border: none;
+      background: transparent;
+      padding: 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 28px;
+      min-width: 55px;
+      min-height: 55px;
+    }
+
+    .modal-body {
+      overflow-y: auto;
+      padding-right: 8px;
+      margin-right: -10px;
+    }
+
+    .cart-item-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px dashed #e5e7eb;
+    }
+
+    .cart-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cart-item-name {
+      font-weight: 600;
+      font-size: 26px;
+    }
+
+    .cart-item-meta {
+      font-size: 22px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .cart-item-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .cart-line-price {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .cart-empty {
+      text-align: center;
+      padding: 24px 12px;
+      font-size: 20px;
+      color: #6b7280;
+    }
+
+    .modal-footer {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      font-size: 20px;
+    }
+
+    .notes {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .notes label {
+      font-size: 22px;
+      font-weight: 500;
+    }
+
+    .notes textarea {
+      resize: vertical;
+      min-height: 80px;
+      max-height: 140px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      font-size: 20px;
+      font-family: inherit;
+    }
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 22px;
+    }
+
+    .summary-row .total {
+      font-weight: 700;
+      color: #b45309;
+      font-size: 26px;
+    }
+
+    .btn-submit {
+      margin-top: 12px;
+      border: none;
+      border-radius: 999px;
+      padding: 18px 20px;
+      font-size: 22px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: linear-gradient(135deg, var(--orange), #f97316);
+      color: white;
+      box-shadow: 0 6px 16px rgba(249, 115, 22, 0.55);
+      min-height: 70px;
+    }
+
+    .btn-submit:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 8px rgba(249, 115, 22, 0.6);
+    }
+
+    .danger-text {
+      color: var(--danger);
+      font-size: 18px;
+      margin-top: 10px;
+    }
+
+    /* ===== SET MENU OPTIONS ===== */
+    #setModalBody {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      padding-bottom: 18px;
+      font-size: 20px;
+    }
+
+    .set-block-title {
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #b45309;
+      font-size: 24px;
+    }
+
+    .select-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 16px;
+    }
+
+    .option-card {
+      padding: 16px 14px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.10);
+      min-height: 95px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      line-height: 1.4;
+    }
+
+    .option-card.active {
+      border-color: var(--orange);
+      background: #fff4e6;
+    }
+
+    .curry-option {
+      font-size: 22px;
+    }
+
+    .curry-option span {
+      font-size: 20px;
+      color: #555;
+    }
+
+    .curry-option .price {
+      font-size: 20px;
+      color: #b45309;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .spice-option {
+      font-size: 23px;
+    }
+
+    .spice-option span {
+      font-size: 20px;
+      color: #4b5563;
+    }
+
+    /* ===== TOAST ===== */
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 9999;
+    }
+
+    #toast.show {
+      opacity: 1;
+    }
+
+    /* ===== CUSTOM CHARGE (STAFF ONLY) ===== */
+    .staff-custom-wrapper {
+      margin-top: 32px;
+      padding: 16px 14px 0;
+      border-top: 1px dashed #e5e7eb;
+    }
+
+    .staff-custom-title {
+      font-size: 18px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    .custom-charge {
+      margin-top: 4px;
+      padding: 10px 12px;
+      background: #fff7ed;
+      border-radius: 10px;
+      border: 1px dashed #fed7aa;
+      font-size: 13px;
+    }
+
+    .custom-charge label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .custom-charge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .custom-charge-row span {
+      font-size: 14px;
+      color: #4b5563;
+    }
+
+    .custom-charge-row input {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      font-size: 14px;
+    }
+
+    .custom-charge-row button {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 14px;
+      background: #f97316;
+      color: #ffffff;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .custom-charge-row button:hover {
+      background: #ea580c;
+    }
+
+    .custom-charge-hint {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    /* ===== SMALL SCREENS ===== */
+    @media (max-width: 480px) {
+      header {
+        padding: 16px 16px 14px;
+      }
+      header h1 {
+        font-size: 26px;
+      }
+      .order-meta {
+        grid-template-columns: 1fr;
+      }
+      main {
+        padding: 16px 12px 20px;
+      }
+      .card-body {
+        padding: 14px 14px 16px;
+      }
+      .card-names {
+        font-size: 20px;
+      }
+      .menu-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .select-grid {
+        grid-template-columns: 1fr;
+      }
+      .option-card {
+        font-size: 21px;
+        min-height: 95px;
+      }
+      .curry-option {
+        font-size: 22px;
+      }
+      .cart-item-name {
+        font-size: 24px;
+      }
+      .cart-item-meta {
+        font-size: 20px;
+      }
+      .notes label {
+        font-size: 22px;
+      }
+      .notes textarea {
+        font-size: 20px;
+      }
+      .summary-row {
+        font-size: 22px;
+      }
+      .summary-row .total {
+        font-size: 24px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .btn-add, .btn-submit, .qty-control {
+        min-height: 65px;
+      }
+      .qty-btn {
+        min-width: 65px;
+      }
+    }
+    
+    /* ===========================
+   タブレット(Androidなど横幅が広い端末向け
+   =========================== */
+    @media (min-width: 600px) {
+      /* header を sticky → 通常にして、スクロールで上に消えるように */
+      header {
+        position: static;
+        padding: 2px 12px 2px;  /* さらに薄く */
+        box-shadow: none;
+      }
+
+      .order-meta {
+        margin-top: 4px;
+        gap: 6px;
+      }
+
+      .field input {
+        min-height: 34px;
+        font-size: 15px;
+        padding: 6px 12px;
+      }
+
+      .categories {
+        margin: 4px 0 4px;
+      }
+
+      .chip {
+        padding: 6px 12px;
+        font-size: 10px;
+        min-height: 32px;
+      }
+    }
+    
+    /* ===========================
+   スマホ専用：カテゴリチップをさらに大きく見やすく
+   =========================== */
+    @media (max-width: 599px) {
+      .chip {
+        padding: 14px 20px;       /* ← ボックスサイズUP（かなり重要） */
+        min-height: 46px;         /* ← 指で押しやすい最適サイズ */
+        font-size: 26px;          /* ← iPhoneで見やすいベストサイズ */
+        border-radius: 999px;
+
+        display: flex;
+        align-items: center;
+        gap: 12px;                /* ← アイコンとの距離も調整 */
+      }
+
+      .chip span.icon {
+        font-size: 24px;          /* ← アイコンも大きくして視認性UP */
+      }
+
+      .categories {
+        gap: 12px;                /* ← チップ同士の間隔を広げる */
+        padding: 6px 0 12px;      /* ← 下のスペースを追加して押しやすく */
+      }
+    }
+
+
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="top-line">
+    <div>
+      <h1>Asian Dining 夢 錦糸町</h1>
+      <div class="subtitle">Digital Menu • ご注文はこちらから</div>
+    </div>
+    <div class="badge-pill">
+      <span>🍛</span> <span>Indian &amp; Nepali Taste</span>
+    </div>
+  </div>
+
+  <div class="order-meta">
+    <div class="field">
+      <label>Table No. / テーブル番号</label>
+      <input type="text" id="tableNumber" placeholder="例: T1, 5, カウンター" />
+    </div>
+    <div class="field">
+      <label>Name / お名前 (任意)</label>
+      <input type="text" id="customerName" placeholder="Optional" />
+    </div>
+  </div>
+
+  <div class="categories" id="categoryChips">
+    <!-- chips generated by JS -->
+  </div>
+</header>
+
+<main>
+  <div class="section-title">
+    <span>🔥</span> <div id="sectionLabel">おすすめメニュー</div>
+  </div>
+  <div id="menuGrid"></div>
+
+  <!-- ===== スタッフ専用：その他会計（メニュー外の料理など） ===== -->
+  <div class="staff-custom-wrapper">
+    <div class="staff-custom-title">
+      👩‍🍳 スタッフ専用（メニュー外の料理・追加チャージなど）
+    </div>
+    <div class="custom-charge">
+      <label>その他会計 / Custom amount（カートに追加）</label>
+      <div class="custom-charge-row">
+        <span>¥</span>
+        <input id="customAmountInput" type="number" min="0" step="1"
+               placeholder="0" inputmode="numeric" />
+        <button type="button" id="customAmountAddBtn">追加</button>
+      </div>
+      <div class="custom-charge-hint">
+        例）まかない・特別料理・サービス料など、メニューにない金額を<br>
+        テーブル番号を入れた上でカートに追加し、「🧾 Your Order」から送信してください。
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- CART BAR -->
+<div class="cart-bar hidden" id="cartBar">
+  <div class="cart-summary">
+    <div class="line1"><span id="cartCount">0</span> items added</div>
+    <div class="line2">Subtotal: ¥<span id="cartTotal">0</span> (tax incl.)</div>
+  </div>
+  <div class="cart-cta">
+    🧾 Your Order <span>➜</span>
+  </div>
+</div>
+
+<!-- CART MODAL -->
+<div class="modal-backdrop" id="cartModalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🧾 Your Order</h2>
+      <button class="modal-close" id="closeCartBtn" aria-label="Close">✕</button>
+    </div>
+
+    <div class="modal-body" id="cartItemsContainer">
+      <!-- cart items -->
+    </div>
+
+    <div class="modal-footer">
+      <!-- エラー表示 -->
+      <div id="errorText" class="danger-text" style="display:none;"></div>
+
+      <div class="notes">
+        <label for="orderNotes">Note / ご要望</label>
+        <textarea id="orderNotes"></textarea>
+      </div>
+      <div class="summary-row">
+        <div>Items: <span id="cartSummaryCount">0</span></div>
+        <div class="total">Total: ¥<span id="cartSummaryTotal">0</span></div>
+      </div>
+      <button class="btn-submit" id="submitOrderBtn">✅ Confirm &amp; Send Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- SET MENU CUSTOMIZE MODAL -->
+<div class="modal-backdrop" id="setModalBackdrop">
+  <div class="modal" id="setModal">
+    <div class="modal-header">
+      <h2 id="setModalTitle">🍛 Customize Set</h2>
+      <button class="modal-close" id="closeSetModalBtn">✕</button>
+    </div>
+    <div class="modal-body" id="setModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-submit" id="addSetToCartBtn">＋ Add This Set</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/********** TABLE PREFILL **********/
+const TABLE_FROM_SERVER = "<?= tableParam ?>";
+
+function prefillTableFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get("table");
+    const tableParam = fromQuery || TABLE_FROM_SERVER;
+
+    if (tableParam) {
+      const input = document.getElementById("tableNumber");
+      if (input) {
+        input.value = tableParam;
+      }
+    }
+  } catch (err) {
+    console.error("prefillTableFromUrl error:", err);
+  }
+}
+document.addEventListener("DOMContentLoaded", prefillTableFromUrl);
+
+/********** CONFIG **********/
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTNSng1TczqtSLuq8T4bbX9WTct794cdv0i1fsudRiDiTm_Bl-6jK7becrbe-q8Etj/exec?action=menuOrder";
+
+/********** MENU DATA **********/
+const MENU_ITEMS = [
+  {
+    id: "L1",
+    name: "One Curry Lunch Set",
+    jpName: "ワンカレーセット",
+    price: 990,
+    category: ["curry-lunch","curry-dinner"],
+    tags: ["set", "popular"],
+    veg: false,
+    spicy: 1,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/onecurryset.png"
+  },
+  {
+    id: "L2",
+    name: "Two Curry Lunch Set",
+    jpName: "2 種カレーセット",
+    price: 1155,
+    category: ["curry-lunch","curry-dinner"],
+    tags: ["set", "special"],
+    veg: false,
+    spicy: 2,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/twocurrylunch.png"
+  },
+  {
+    id: "L3",
+    name: "Ladies Set",
+    jpName: "レディースセット",
+    price: 1265,
+    category: ["curry-lunch","curry-dinner"],
+    tags: ["ladies", "light"],
+    veg: false,
+    spicy: 2,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/ladiesset.png"
+  },
+  {
+    id: "S1",
+    jpName: "スペシャルセット",
+    name: "Special Set",
+    price: 1430,
+    category: ["curry-lunch","curry-dinner"],
+    tags: ["chef special", "big"],
+    veg: false,
+    spicy: 2,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/specialset.png"
+  },
+  {
+    id: "R1",
+    jpName: "カレーライスセット",
+    name: "Curry Rice Set",
+    price: 935,
+    category: ["curry-lunch","curry-dinner"],
+    tags: ["Rice, Salad, Soft Drink"],
+    veg: false,
+    spicy: 1,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/curry_rise.png"
+  },
+  {
+    id: "R2",
+    jpName: "ダブルカレーライスセット",
+    name: "Double Curry Rice Set",
+    price: 1100,
+    category: ["curry-lunch","curry-dinner"],
+    tags: ["Rice, Salad, Soft Drink"],
+    veg: false,
+    spicy: 2,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/double_curry.png"
+  },
+  {
+    id: "C1",
+    name: "Child Set",
+    jpName: "お子様セット",
+    price: 660,
+    category: ["curry-lunch","curry-dinner"],
+    tags: ["Salad","Rice&Naan","Mild ButterCicken","Orange Juice"],
+    veg: false,
+    spicy: 0,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/childset.jpg"
+  },
+  {
+    id: "N1",
+    name: "Plain Naan",
+    jpName: "プレーンナン",
+    price: 200,
+    category: "naan-side",
+    tags: ["side"],
+    veg: false,
+    spicy: 0,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/nan.png"
+  },
+  {
+    id: "N2",
+    name: "Cheese Naan",
+    jpName: "チーズナン",
+    price: 350,
+    category: "naan-side",
+    tags: ["popular", "cheese"],
+    veg: false,
+    spicy: 0,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/cheesenaan.jpg"
+  },
+  {
+    id: "D2",
+    name: "Momo",
+    jpName: "モモ",
+    price: 650,
+    category: "naan-side",
+    tags: ["Nepali Gyoja"],
+    veg: false,
+    spicy: 1,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/momo.png"
+  },
+  {
+    id: "TH1",
+    name: "Gapao Rice",
+    jpName: "ガパオライス",
+    price: 1100,
+    category: ["curry-lunch","curry-dinner","thai"],
+    tags: ["Salad", "Soft Drink"],
+    veg: false,
+    spicy: 1,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/thai_gapao.png"
+  },
+  {
+    id: "TH2",
+    name: "Seafood Chahan",
+    jpName: "シーフードチャーハン",
+    price: 1100,
+    category: ["curry-lunch","curry-dinner","thai"],
+    tags: ["Salad", "Soft Drink"],
+    veg: false,
+    spicy: 1,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/thai_seafood_chahan.png"
+  },
+  {
+    id: "TH3",
+    name: "White Gapao",
+    jpName: "ホワイトガパオ",
+    price: 1165,
+    category: ["curry-lunch","curry-dinner","thai"],
+    tags: ["Salad", "Soft Drink"],
+    veg: false,
+    spicy: 1,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/thai_white_gapao.png"
+  },
+  {
+    id: "TH4",
+    name: "Rosemary Chicken Bowl",
+    jpName: "ローズマリーチキン丼",
+    price: 1165,
+    category: ["curry-lunch","curry-dinner","thai"],
+    tags: ["Salad", "Soft Drink", "Soup"],
+    veg: false,
+    spicy: 1,
+    image: "https://raw.githubusercontent.com/ajaya2944/yume-menu-images/main/thai_rosemary_bow.png"
+  }
+];
+
+const CATEGORIES = [
+  { id: "all",         label: "すべて / All Menu",             icon: "📋" },
+  { id: "curry-lunch", label: "ランチセット / Lunch Set",       icon: "🍛" },
+  { id: "thai",        label: "タイ料理 / Thai Menu",          icon: "🌶️" },
+  { id: "naan-side",   label: "ナン＆サイド / Naan & Side",     icon: "🥖" },
+  { id: "curry-dinner",label: "ディナーカレー / Dinner Curry",  icon: "🌙" },
+  { id: "drink",       label: "ドリンク / Drinks",             icon: "🥤" },
+  { id: "dessert",     label: "デザート / Dessert",            icon: "🍨" },
+  { id: "special",     label: "スペシャル / Special",           icon: "⭐" }
+];
+
+/********** SET MENU DEFINITIONS **********/
+const CURRY_LIST = [
+  { name: "Today's Curry",           jp: "本日のカレー",             price: 990 },
+  { name: "Chicken Curry",           jp: "チキンカレー",             price: 990 },
+  { name: "Mutton Curry",            jp: "マトンカレー",             price: 1045 },
+  { name: "Vegetable Curry",         jp: "ベジタブルカレー",         price: 990 },
+  { name: "Keema Curry",             jp: "キーマカレー",             price: 990 },
+  { name: "Seafood Curry",           jp: "シーフードカレー",         price: 1089 },
+  { name: "Sag Chicken",             jp: "チキンほうれん草",         price: 1045 },
+  { name: "Butter Chicken",          jp: "バターチキン",             price: 1089 },
+  { name: "Keema & Egg",             jp: "キーマ＆エッグカレー",     price: 1045 },
+  { name: "Dal Curry",               jp: "ダルカレー",               price: 935 },
+  { name: "Green Curry",             jp: "グリーンカレー",           price: 1089 },
+  { name: "Spinach & Paneer Curry",  jp: "ほうれん草＆パニールカレー", price: 1089 }
+];
+
+const CURRY_RICE_SINGLE = [
+  { name: "Chicken Curry", jp: "チキンカレー" },
+  { name: "Keema Curry",   jp: "キーマカレー" }
+];
+
+const DRINK_LIST = [
+  { name: "Lassi",        jp: "ラッシー" },
+  { name: "Mango Lassi",  jp: "マンゴーラッシー" },
+  { name: "Orange Juice", jp: "オレンジジュース" },
+  { name: "Pineapple",    jp: "パイナップルジュース" },
+  { name: "Oolong Tea",   jp: "ウーロン茶" },
+  { name: "Jasmin Tea",   jp: "ジャスミン茶" },
+  { name: "Grapefruits",  jp: "グレープフルーツジュース" },
+  { name: "COLA",         jp: "コーラ" }
+];
+
+const SPICE_LEVELS = [
+  { name: "Mild",     jp: "甘口" },
+  { name: "Medium",   jp: "中辛" },
+  { name: "Hot",      jp: "辛口" },
+  { name: "Very Hot", jp: "激辛" }
+];
+
+const BREAD_LIST_DEFAULT = [
+  { name: "Naan",                jp: "ナン" },
+  { name: "Rice",                jp: "ライス" },
+  { name: "Cheese Naan (+¥250)", jp: "チーズナン（＋¥250）" }
+];
+
+const BREAD_LIST_TWO_CURRY = [
+  { name: "Naan & Rice (standard)", jp: "ナン＆ライス（標準）" },
+  { name: "Only Naan",              jp: "ナンのみ" },
+  { name: "Only Rice",              jp: "ライスのみ" },
+  { name: "Cheese Naan (+¥250)",    jp: "チーズナン（＋¥250）" }
+];
+
+/********** STATE **********/
+let currentCategory = "all";
+const cart = new Map(); // id -> { item, qty, isSet, options }
+
+function getDinnerExtra(sectionCategory) {
+  return sectionCategory === "curry-dinner" ? 200 : 0;
+}
+
+/********** CATEGORY CHIPS **********/
+function renderCategories() {
+  const container = document.getElementById("categoryChips");
+  container.innerHTML = "";
+  CATEGORIES.forEach(cat => {
+    const chip = document.createElement("button");
+    chip.className = "chip" + (cat.id === currentCategory ? " active" : "");
+    chip.dataset.category = cat.id;
+    chip.innerHTML = `<span class="icon">${cat.icon}</span>${cat.label}`;
+    chip.addEventListener("click", () => {
+      currentCategory = cat.id;
+      document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      renderMenu();
+    });
+    container.appendChild(chip);
+  });
+}
+
+/********** MENU CARD **********/
+function createMenuCard(item, sectionCategory) {
+  const effectiveCat = sectionCategory || currentCategory;
+  const dinnerExtra  = getDinnerExtra(effectiveCat);
+  const displayPrice = item.price + dinnerExtra;
+
+  const card = document.createElement("div");
+  card.className = "card";
+
+  const imgWrap = document.createElement("div");
+  imgWrap.className = "card-img-wrap";
+
+  const img = document.createElement("img");
+  img.className = "card-img";
+  img.src = item.image;
+  img.alt = item.name;
+  imgWrap.appendChild(img);
+
+  if (item.veg) {
+    const tag = document.createElement("div");
+    tag.className = "card-tag veg";
+    tag.innerHTML = "🌱 Veg";
+    imgWrap.appendChild(tag);
+  } else if (
+    item.category === "special" ||
+    (Array.isArray(item.category) && item.category.includes("special"))
+  ) {
+    const tag = document.createElement("div");
+    tag.className = "card-tag";
+    tag.innerHTML = "⭐ Special";
+    imgWrap.appendChild(tag);
+  }
+
+  const body = document.createElement("div");
+  body.className = "card-body";
+
+  const names = document.createElement("div");
+  names.className = "card-names";
+  names.innerHTML = `${item.jpName}<div class="jp">${item.name}</div>`;
+  body.appendChild(names);
+
+  const priceRow = document.createElement("div");
+  priceRow.className = "price-row";
+  const price = document.createElement("div");
+  price.className = "price";
+  price.textContent = `¥${displayPrice.toLocaleString()}`;
+  priceRow.appendChild(price);
+
+  if (item.spicy > 0) {
+    const spicy = document.createElement("div");
+    spicy.style.fontSize = "11px";
+    spicy.style.color = "#b91c1c";
+    spicy.textContent = "🌶".repeat(item.spicy);
+    priceRow.appendChild(spicy);
+  } else {
+    priceRow.appendChild(document.createElement("div"));
+  }
+
+  body.appendChild(priceRow);
+
+  const badges = document.createElement("div");
+  badges.className = "badges";
+  (item.tags || []).forEach(tag => {
+    const el = document.createElement("span");
+    let cls = "badge";
+    if (tag.toLowerCase().includes("spicy")) cls += " spicy";
+    if (tag.toLowerCase().includes("special")) cls += " special";
+    el.className = cls;
+    el.textContent = tag;
+    badges.appendChild(el);
+  });
+  body.appendChild(badges);
+
+  const footer = document.createElement("div");
+  footer.className = "card-footer";
+
+  const qtyCtrl = document.createElement("div");
+  qtyCtrl.className = "qty-control";
+
+  const minusBtn = document.createElement("button");
+  minusBtn.className = "qty-btn";
+  minusBtn.textContent = "−";
+
+  const qtyValue = document.createElement("div");
+  qtyValue.className = "qty-value";
+  qtyValue.textContent = "1";
+
+  const plusBtn = document.createElement("button");
+  plusBtn.className = "qty-btn";
+  plusBtn.textContent = "+";
+
+  plusBtn.addEventListener("click", () => {
+    qtyValue.textContent = String(Number(qtyValue.textContent) + 1);
+  });
+
+  minusBtn.addEventListener("click", () => {
+    const current = Number(qtyValue.textContent);
+    if (current > 1) qtyValue.textContent = String(current - 1);
+  });
+
+  qtyCtrl.appendChild(minusBtn);
+  qtyCtrl.appendChild(qtyValue);
+  qtyCtrl.appendChild(plusBtn);
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "btn-add";
+  addBtn.innerHTML = "＋ Add";
+  addBtn.dataset.sectionCategory = effectiveCat;
+
+  addBtn.addEventListener("click", (e) => {
+    const count  = Number(qtyValue.textContent);
+    const secCat = e.currentTarget.dataset.sectionCategory || effectiveCat;
+    handleAddButton(item, count, secCat);
+    qtyValue.textContent = "1";
+  });
+
+  footer.appendChild(qtyCtrl);
+  footer.appendChild(addBtn);
+
+  body.appendChild(footer);
+  card.appendChild(imgWrap);
+  card.appendChild(body);
+
+  return card;
+}
+
+/********** RENDER MENU **********/
+function renderMenu() {
+  const grid = document.getElementById("menuGrid");
+  const label = document.getElementById("sectionLabel");
+  const catObj = CATEGORIES.find(c => c.id === currentCategory);
+  label.textContent = catObj ? catObj.label : "Menu";
+
+  grid.innerHTML = "";
+
+  if (currentCategory === "all") {
+    CATEGORIES.forEach(cat => {
+      if (cat.id === "all") return;
+
+      const items = MENU_ITEMS.filter(i => {
+        if (!i.category) return false;
+        const cats = Array.isArray(i.category) ? i.category : [i.category];
+        if (!cats.includes(cat.id)) return false;
+        if ((cat.id === "curry-lunch" || cat.id === "curry-dinner") && cats.includes("thai")) {
+          return false;
+        }
+        return true;
+      });
+
+      if (!items.length) return;
+
+      const heading = document.createElement("h3");
+      heading.style.margin = "25px 4px 8px";
+      heading.style.fontSize = "17px";
+      heading.style.color = "#78350f";
+      heading.innerHTML = `${cat.icon} ${cat.label}`;
+      grid.appendChild(heading);
+
+      const subGrid = document.createElement("div");
+      subGrid.className = "menu-grid";
+
+      items.forEach(item => {
+        const card = createMenuCard(item, cat.id);
+        subGrid.appendChild(card);
+      });
+
+      grid.appendChild(subGrid);
+    });
+    return;
+  }
+
+  if (currentCategory === "curry-lunch" || currentCategory === "curry-dinner") {
+    const allItems = MENU_ITEMS.filter(i => {
+      if (!i.category) return false;
+      const cats = Array.isArray(i.category) ? i.category : [i.category];
+      return cats.includes(currentCategory);
+    });
+
+    const normalItems = allItems.filter(i => {
+      const cats = Array.isArray(i.category) ? i.category : [i.category];
+      return !cats.includes("thai");
+    });
+
+    const thaiItems = allItems.filter(i => {
+      const cats = Array.isArray(i.category) ? i.category : [i.category];
+      return cats.includes("thai");
+    });
+
+    if (normalItems.length > 0) {
+      const sub = document.createElement("div");
+      sub.className = "menu-grid";
+      normalItems.forEach(item => sub.appendChild(createMenuCard(item, currentCategory)));
+      grid.appendChild(sub);
+    }
+
+    if (thaiItems.length > 0) {
+      const h = document.createElement("h3");
+      h.style.margin = "24px 4px 8px";
+      h.style.fontSize = "17px";
+      h.style.color = "#78350f";
+      h.innerHTML = `🌶️ タイ料理 / Thai Menu`;
+      grid.appendChild(h);
+
+      const sub2 = document.createElement("div");
+      sub2.className = "menu-grid";
+      thaiItems.forEach(item => sub2.appendChild(createMenuCard(item, currentCategory)));
+      grid.appendChild(sub2);
+    }
+
+    return;
+  }
+
+  if (currentCategory === "thai") {
+    const items = MENU_ITEMS.filter(i => {
+      if (!i.category) return false;
+      const cats = Array.isArray(i.category) ? i.category : [i.category];
+      return cats.includes("thai");
+    });
+
+    const subGrid = document.createElement("div");
+    subGrid.className = "menu-grid";
+    items.forEach(item => subGrid.appendChild(createMenuCard(item, "thai")));
+    grid.appendChild(subGrid);
+    return;
+  }
+
+  const items = MENU_ITEMS.filter(i => {
+    if (!i.category) return false;
+    const cats = Array.isArray(i.category) ? i.category : [i.category];
+    return cats.includes(currentCategory);
+  });
+
+  const subGrid = document.createElement("div");
+  subGrid.className = "menu-grid";
+  items.forEach(item => subGrid.appendChild(createMenuCard(item, currentCategory)));
+  grid.appendChild(subGrid);
+}
+
+/********** CART LOGIC **********/
+function handleAddButton(item, qty, sectionCategory) {
+  const isThai =
+    item.category === "thai" ||
+    (Array.isArray(item.category) && item.category.includes("thai"));
+
+  const isSet =
+    ["L1","L2","L3","S1","R1","R2"].includes(item.id) || isThai;
+
+  if (isSet) {
+    openSetModal(item, qty, sectionCategory);
+  } else {
+    addToCartSimple(item, qty, sectionCategory);
+  }
+}
+
+function addToCartSimple(item, qty, sectionCategory) {
+  const dinnerExtra = getDinnerExtra(sectionCategory);
+  const price = item.price + dinnerExtra;
+  const key = sectionCategory === "curry-dinner" ? item.id + "_DIN" : item.id;
+  const existing = cart.get(key);
+  const orderItem = { ...item, price };
+
+  if (existing && !existing.isSet) {
+    existing.qty += qty;
+  } else {
+    cart.set(key, { item: orderItem, qty, isSet: false });
+  }
+  updateCartUI();
+}
+
+function addToCartEntry(id, entry) {
+  cart.set(id, entry);
+  updateCartUI();
+}
+
+function getCartTotals() {
+  let totalQty = 0;
+  let totalPrice = 0;
+  cart.forEach(entry => {
+    totalQty += entry.qty;
+    totalPrice += entry.qty * entry.item.price;
+  });
+  return { totalQty, totalPrice };
+}
+
+function updateCartUI() {
+  const cartCountSpan = document.getElementById("cartCount");
+  const cartTotalSpan = document.getElementById("cartTotal");
+  const cartBar = document.getElementById("cartBar");
+
+  const { totalQty, totalPrice } = getCartTotals();
+  cartCountSpan.textContent = totalQty;
+  cartTotalSpan.textContent = totalPrice.toLocaleString();
+
+  if (totalQty > 0) {
+    cartBar.classList.remove("hidden");
+  } else {
+    cartBar.classList.add("hidden");
+  }
+
+  document.getElementById("cartSummaryCount").textContent = totalQty;
+  document.getElementById("cartSummaryTotal").textContent = totalPrice.toLocaleString();
+  renderCartModalItems();
+}
+
+function renderCartModalItems() {
+  const container = document.getElementById("cartItemsContainer");
+  container.innerHTML = "";
+
+  if (cart.size === 0) {
+    const empty = document.createElement("div");
+    empty.className = "cart-empty";
+    empty.textContent = "No items in your order yet. メニューからお選びください。";
+    container.appendChild(empty);
+    return;
+  }
+
+  cart.forEach((entry, key) => {
+    const { item, qty, isSet, options } = entry;
+
+    const row = document.createElement("div");
+    row.className = "cart-item-row";
+
+    const info = document.createElement("div");
+    info.className = "cart-item-info";
+    const name = document.createElement("div");
+    name.className = "cart-item-name";
+    name.textContent = item.name;
+    const meta = document.createElement("div");
+    meta.className = "cart-item-meta";
+
+    let metaLines = [`${item.jpName} / ¥${item.price.toLocaleString()}`];
+    if (isSet && options) {
+      const optParts = [];
+      if (options.curry && options.curry.length) {
+        optParts.push("Curry: " + options.curry.join(" & "));
+      }
+      if (options.spice) optParts.push("Spice: " + options.spice);
+      if (options.bread) optParts.push("Bread: " + options.bread);
+      if (options.drink) optParts.push("Drink: " + options.drink);
+      if (optParts.length) metaLines.push(optParts.join(" / "));
+    }
+    meta.innerHTML = metaLines.join("<br>");
+
+    info.appendChild(name);
+    info.appendChild(meta);
+
+    const right = document.createElement("div");
+    right.className = "cart-item-right";
+    const linePrice = document.createElement("div");
+    linePrice.className = "cart-line-price";
+    linePrice.textContent = `¥${(item.price * qty).toLocaleString()}`;
+
+    const qtyCtrl = document.createElement("div");
+    qtyCtrl.className = "qty-control";
+    const minusBtn = document.createElement("button");
+    minusBtn.className = "qty-btn";
+    minusBtn.textContent = "−";
+    const qtyValue = document.createElement("div");
+    qtyValue.className = "qty-value";
+    qtyValue.textContent = String(qty);
+    const plusBtn = document.createElement("button");
+    plusBtn.className = "qty-btn";
+    plusBtn.textContent = "+";
+
+    minusBtn.addEventListener("click", () => {
+      const current = cart.get(key);
+      if (!current) return;
+      if (current.qty <= 1) {
+        cart.delete(key);
+      } else {
+        current.qty -= 1;
+      }
+      updateCartUI();
+    });
+
+    plusBtn.addEventListener("click", () => {
+      const current = cart.get(key);
+      if (!current) return;
+      current.qty += 1;
+      updateCartUI();
+    });
+
+    qtyCtrl.appendChild(minusBtn);
+    qtyCtrl.appendChild(qtyValue);
+    qtyCtrl.appendChild(plusBtn);
+
+    right.appendChild(linePrice);
+    right.appendChild(qtyCtrl);
+
+    row.appendChild(info);
+    row.appendChild(right);
+    container.appendChild(row);
+  });
+}
+
+/********** MODAL HANDLING (CART) **********/
+const cartBarEl = document.getElementById("cartBar");
+const cartModalBackdrop = document.getElementById("cartModalBackdrop");
+const closeCartBtn = document.getElementById("closeCartBtn");
+
+cartBarEl.addEventListener("click", () => {
+  cartModalBackdrop.classList.add("active");
+});
+
+closeCartBtn.addEventListener("click", () => {
+  cartModalBackdrop.classList.remove("active");
+});
+
+cartModalBackdrop.addEventListener("click", e => {
+  if (e.target === cartModalBackdrop) {
+    cartModalBackdrop.classList.remove("active");
+  }
+});
+
+/********** SET MENU MODAL **********/
+const setModalBackdrop = document.getElementById("setModalBackdrop");
+const setModalBody = document.getElementById("setModalBody");
+const setModalTitle = document.getElementById("setModalTitle");
+let currentSetItem = null;
+let currentSetQty = 1;
+let currentSetIsDinner = false;
+
+document.getElementById("closeSetModalBtn").addEventListener("click", () => {
+  setModalBackdrop.classList.remove("active");
+});
+
+setModalBackdrop.addEventListener("click", e => {
+  if (e.target === setModalBackdrop) {
+    setModalBackdrop.classList.remove("active");
+  }
+});
+
+function openSetModal(item, qty, sectionCategory) {
+  currentSetItem = item;
+  currentSetQty  = qty;
+  currentSetIsDinner = (sectionCategory === "curry-dinner");
+
+  setModalTitle.textContent = `🍛 ${item.jpName} - Customize`;
+  setModalBody.innerHTML = generateSetOptions(item);
+  setModalBackdrop.classList.add("active");
+}
+
+/********** SET OPTIONS HTML **********/
+function generateSetOptions(item) {
+  const isThaiSet =
+    item.category === "thai" ||
+    (Array.isArray(item.category) && item.category.includes("thai"));
+
+  if (isThaiSet) {
+    let html = "";
+
+    html += `<div>
+      <div class="set-block-title">Spice Level</div>
+      <div class="select-grid">`;
+    SPICE_LEVELS.forEach(s => {
+      html += `<div class="option-card spice-option" data-value="${s.jp}">
+                ${s.jp}<br>
+                <span style="font-size:18px;color:#4b5563;">${s.name}</span>
+              </div>`;
+    });
+    html += `</div></div>`;
+
+    html += `<div>
+      <div class="set-block-title">Soft Drink</div>
+      <div class="select-grid">`;
+    DRINK_LIST.forEach(d => {
+      html += `<div class="option-card drink-option" data-value="${d.jp}">
+                ${d.jp}<br>
+                <span style="font-size:18px;color:#4b5563;">${d.name}</span>
+              </div>`;
+    });
+    html += `</div></div>`;
+
+    return html;
+  }
+
+  if (item.id === "R1") {
+    let html = "";
+
+    html += `<div>
+      <div class="set-block-title">Curry (1種類)</div>
+      <div class="select-grid">`;
+    CURRY_RICE_SINGLE.forEach(c => {
+      html += `<div class="option-card curry-option" data-value="${c.name}">
+                 ${c.jp}<br>
+                 <span style="font-size:18px;color:#555;">${c.name}</span>
+               </div>`;
+    });
+    html += `</div></div>`;
+
+    html += `<div>
+      <div class="set-block-title">Spice Level</div>
+      <div class="select-grid">`;
+    SPICE_LEVELS.forEach(s => {
+      html += `<div class="option-card spice-option" data-value="${s.jp}">
+                 ${s.jp}<br>
+                 <span style="font-size:18px;color:#4b5563;">${s.name}</span>
+               </div>`;
+    });
+    html += `</div></div>`;
+
+    html += `<div>
+      <div class="set-block-title">Side</div>
+      <div class="select-grid">
+        <div class="option-card active">
+          ライス＆サラダ付き<br>
+          <span style="font-size:18px;color:#4b5563;">Rice & Salad Included</span>
+        </div>
+      </div>
+    </div>`;
+
+    html += `<div>
+      <div class="set-block-title">Soft Drink</div>
+      <div class="select-grid">`;
+    DRINK_LIST.forEach(d => {
+      html += `<div class="option-card drink-option" data-value="${d.jp}">
+                 ${d.jp}<br>
+                 <span style="font-size:18px;color:#4b5563;">${d.name}</span>
+               </div>`;
+    });
+    html += `</div></div>`;
+
+    return html;
+  }
+
+  if (item.id === "R2") {
+    let html = "";
+
+    html += `<div>
+      <div class="set-block-title">Curry (2種類まで)</div>
+      <div class="select-grid">`;
+    CURRY_LIST.forEach(c => {
+      html += `<div class="option-card curry-option" data-value="${c.name}">
+                 ${c.jp}<br>
+                 <span style="font-size:18px;color:#555;">${c.name}</span>
+               </div>`;
+    });
+    html += `</div></div>`;
+
+    html += `<div>
+      <div class="set-block-title">Spice Level (2つまで)</div>
+      <div class="select-grid">`;
+    SPICE_LEVELS.forEach(s => {
+      html += `<div class="option-card spice-option" data-value="${s.jp}">
+                 ${s.jp}<br>
+                 <span style="font-size:18px;color:#4b5563;">${s.name}</span>
+               </div>`;
+    });
+    html += `</div></div>`;
+
+    html += `<div>
+      <div class="set-block-title">Soft Drink</div>
+      <div class="select-grid">`;
+    DRINK_LIST.forEach(d => {
+      html += `<div class="option-card drink-option" data-value="${d.jp}">
+                 ${d.jp}<br>
+                 <span style="font-size:18px;color:#4b5563;">${d.name}</span>
+               </div>`;
+    });
+    html += `</div></div>`;
+
+    return html;
+  }
+
+  let curryCount = 1;
+  if (["L2","L3","S1"].includes(item.id)) curryCount = 2;
+
+  let html = "";
+
+  html += `<div>
+    <div class="set-block-title">Select Curry (${curryCount}種類まで)</div>
+    <div class="select-grid">`;
+  CURRY_LIST.forEach(c => {
+    const hidePrice = ["L2","S1","L3"].includes(item.id);
+    html += `<div class="option-card curry-option" data-value="${c.name}">
+              ${c.jp}<br>
+              <span style="font-size:18px;color:#555;">${c.name}</span>
+              ${hidePrice ? "" : `<br><span class="price" style="font-size:19px;color:#b45309;">¥${c.price}</span>`}
+            </div>`;
+  });
+  html += `</div></div>`;
+
+  html += `<div>
+    <div class="set-block-title">Spice Level</div>
+    <div class="select-grid">`;
+  SPICE_LEVELS.forEach(s => {
+    html += `<div class="option-card spice-option" data-value="${s.jp}">
+               ${s.jp}<br>
+               <span style="font-size:18px;color:#4b5563;">${s.name}</span>
+             </div>`;
+  });
+  html += `</div></div>`;
+
+  html += `<div>
+    <div class="set-block-title">Naan or Rice</div>
+    <div class="select-grid">`;
+
+  const isTwoCurrySet = ["L2","L3","S1"].includes(item.id);
+  const breadList = isTwoCurrySet ? BREAD_LIST_TWO_CURRY : BREAD_LIST_DEFAULT;
+
+  breadList.forEach(b => {
+    html += `<div class="option-card bread-option" data-value="${b.jp}">
+              ${b.jp}<br>
+              <span style="font-size:18px;color:#4b5563;">${b.name}</span>
+            </div>`;
+  });
+  html += `</div></div>`;
+
+  html += `<div>
+    <div class="set-block-title">Drink</div>
+    <div class="select-grid">`;
+  DRINK_LIST.forEach(d => {
+    html += `<div class="option-card drink-option" data-value="${d.jp}">
+               ${d.jp}<br>
+               <span style="font-size:18px;color:#4b5563;">${d.name}</span>
+             </div>`;
+  });
+  html += `</div></div>`;
+
+  return html;
+}
+
+/********** OPTION-CARD CLICK HANDLER **********/
+document.addEventListener("click", e => {
+  const el = e.target.closest(".option-card");
+  if (!el) return;
+
+  const isCurry = el.classList.contains("curry-option");
+  const isSpice = el.classList.contains("spice-option");
+  const isBread = el.classList.contains("bread-option");
+  const isDrink = el.classList.contains("drink-option");
+  if (!isCurry && !isSpice && !isBread && !isDrink) return;
+  if (!currentSetItem) return;
+
+  if (isCurry) {
+    el.classList.toggle("active");
+    const selected = Array.from(document.querySelectorAll(".curry-option.active"));
+    const max = (
+      ["L2","L3","S1","R2"].includes(currentSetItem.id)
+    ) ? 2 : 1;
+
+    if (selected.length > max) {
+      el.classList.remove("active");
+      alert(`You can select up to ${max} curry.`);
+    }
+    return;
+  }
+
+  if (isSpice) {
+    const isTwoCurrySet =
+      ["L2","L3","S1","R2"].includes(currentSetItem.id);
+
+    if (isTwoCurrySet) {
+      el.classList.toggle("active");
+      const selected = Array.from(document.querySelectorAll(".spice-option.active"));
+      if (selected.length > 2) {
+        el.classList.remove("active");
+        alert("You can select up to 2 spice levels.");
+      }
+    } else {
+      document.querySelectorAll(".spice-option").forEach(x => x.classList.remove("active"));
+      el.classList.add("active");
+    }
+    return;
+  }
+
+  const groupSelector = isBread
+    ? ".bread-option"
+    : isDrink
+    ? ".drink-option"
+    : "";
+
+  if (groupSelector) {
+    document.querySelectorAll(groupSelector).forEach(x => x.classList.remove("active"));
+    el.classList.add("active");
+  }
+});
+
+/********** ADD SET TO CART **********/
+document.getElementById("addSetToCartBtn").addEventListener("click", () => {
+  if (!currentSetItem) return;
+
+  const dinnerExtra = currentSetIsDinner ? 200 : 0;
+
+  const isThaiSet =
+    currentSetItem.category === "thai" ||
+    (Array.isArray(currentSetItem.category) && currentSetItem.category.includes("thai"));
+  const isRiceSet = currentSetItem.id === "R1" || currentSetItem.id === "R2";
+
+  const spiceEls = Array.from(document.querySelectorAll(".spice-option.active"));
+  const breadEl = document.querySelector(".bread-option.active");
+  const drinkEl = document.querySelector(".drink-option.active");
+
+  if (isThaiSet) {
+    if (spiceEls.length === 0) {
+      alert("Please select spice level.");
+      return;
+    }
+    if (!drinkEl) {
+      alert("Please select drink.");
+      return;
+    }
+
+    const spiceText = spiceEls[0].dataset.value;
+    const selectedDrink = drinkEl.dataset.value;
+    const id = currentSetItem.id + "_" + Math.random().toString(36).slice(2, 8);
+    const basePrice = currentSetItem.price + dinnerExtra;
+
+    addToCartEntry(id, {
+      item: {
+        id: currentSetItem.id,
+        name: currentSetItem.name,
+        jpName: currentSetItem.jpName,
+        price: basePrice,
+        category: currentSetItem.category || ""
+      },
+      qty: currentSetQty,
+      isSet: true,
+      options: {
+        spice: spiceText,
+        drink: selectedDrink
+      }
+    });
+
+    setModalBackdrop.classList.remove("active");
+    return;
+  }
+
+  const selectedCurry = Array.from(
+    document.querySelectorAll(".curry-option.active")
+  ).map(el => el.dataset.value);
+
+  const isTwoCurrySet =
+    ["L2","L3","S1","R2"].includes(currentSetItem.id);
+
+  const curryCount = isTwoCurrySet ? 2 : 1;
+
+  if (selectedCurry.length < curryCount) {
+    alert(`Please select ${curryCount} curry.`);
+    return;
+  }
+
+  let spiceText = "";
+  if (isTwoCurrySet) {
+    if (spiceEls.length !== 2) {
+      alert("Please select 2 spice levels (for each curry).");
+      return;
+    }
+    spiceText = spiceEls.map(el => el.dataset.value).join(" & ");
+  } else {
+    if (spiceEls.length === 0) {
+      alert("Please select spice level.");
+      return;
+    }
+    spiceText = spiceEls[0].dataset.value;
+  }
+
+  if (!isRiceSet && !breadEl) {
+    alert("Please select Naan or Rice.");
+    return;
+  }
+
+  if (!drinkEl) {
+    alert("Please select drink.");
+    return;
+  }
+
+  let breadValue = "";
+  let extraPrice = 0;
+
+  if (isRiceSet) {
+    breadValue = "Rice";
+  } else {
+    const selectedBreadRaw = breadEl.dataset.value;
+    const isCheeseBread =
+      selectedBreadRaw.startsWith("チーズナン") ||
+      selectedBreadRaw.startsWith("Cheese Naan");
+    breadValue = isCheeseBread ? "Cheese Naan" : selectedBreadRaw;
+    if (isCheeseBread) extraPrice = 250;
+  }
+
+  const selectedDrink = drinkEl.dataset.value;
+  const finalPrice = currentSetItem.price + extraPrice + dinnerExtra;
+  const id = currentSetItem.id + "_" + Math.random().toString(36).slice(2, 8);
+
+  addToCartEntry(id, {
+    item: {
+      id: currentSetItem.id,
+      name: currentSetItem.name,
+      jpName: currentSetItem.jpName,
+      price: finalPrice,
+      category: currentSetItem.category || ""
+    },
+    qty: currentSetQty,
+    isSet: true,
+    options: {
+      curry: selectedCurry,
+      spice: spiceText,
+      bread: breadValue,
+      drink: selectedDrink
+    },
+    cheeseUpgrade: !isRiceSet && breadValue === "Cheese Naan"
+  });
+
+  setModalBackdrop.classList.remove("active");
+});
+
+/********** SUBMIT ORDER **********/
+document.getElementById("submitOrderBtn").addEventListener("click", submitOrder);
+
+async function submitOrder() {
+  const errorEl = document.getElementById("errorText");
+  if (errorEl) {
+    errorEl.style.display = "none";
+    errorEl.textContent = "";
+  }
+
+  const { totalQty, totalPrice } = getCartTotals();
+  if (totalQty === 0) {
+    if (errorEl) {
+      errorEl.textContent = "Please add at least one item. / 1 品以上ご注文ください。";
+      errorEl.style.display = "block";
+    }
+    return;
+  }
+
+  const tableNumber = document.getElementById("tableNumber").value.trim();
+  if (!tableNumber) {
+    if (errorEl) {
+      errorEl.textContent = "Table number is required. / テーブル番号を入力してください。";
+      errorEl.style.display = "block";
+    }
+    return;
+  }
+
+  const customerName = document.getElementById("customerName").value.trim();
+  const notes = document.getElementById("orderNotes").value.trim();
+
+  const items = [];
+  cart.forEach(entry => {
+    const { item, qty, isSet, options } = entry;
+    const base = {
+      id: item.id,
+      name: item.name,
+      jpName: item.jpName,
+      price: item.price,
+      qty,
+      lineTotal: item.price * qty,
+      category: item.category || ""
+    };
+    if (isSet && options) {
+      base.isSet = true;
+      base.options = options;
+    }
+    items.push(base);
+  });
+
+  const payload = {
+    tableNumber,
+    customerName,
+    notes,
+    items,
+    totalQty,
+    totalPrice,
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    const btn = document.getElementById("submitOrderBtn");
+    btn.disabled = true;
+    btn.textContent = "Sending... / 送信中";
+
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    showToast("Order sent! / ご注文ありがとうございました");
+    cart.clear();
+    document.getElementById("orderNotes").value = "";
+    updateCartUI();
+    cartModalBackdrop.classList.remove("active");
+  } catch (err) {
+    console.error(err);
+    if (errorEl) {
+      errorEl.textContent =
+        "Error sending order. Please call staff. / 送信エラー。スタッフをお呼びください。";
+      errorEl.style.display = "block";
+    }
+  } finally {
+    const btn = document.getElementById("submitOrderBtn");
+    btn.disabled = false;
+    btn.textContent = "✅ Confirm & Send Order";
+  }
+}
+
+/********** TOAST **********/
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => {
+    t.classList.remove("show");
+  }, 2500);
+}
+
+/********** CUSTOM AMOUNT TO CART (STAFF ONLY) **********/
+function addCustomAmountToCart() {
+  const input = document.getElementById("customAmountInput");
+  if (!input) return;
+
+  const raw = input.value.trim();
+  const val = Number(raw);
+
+  if (!val || val <= 0) {
+    showToast("金額を入力してください。");
+    return;
+  }
+
+  const item = {
+    id: "MISC-" + Date.now(),
+    name: "Custom charge",
+    jpName: "その他会計",
+    price: val,
+    category: "custom",
+    tags: ["custom"],
+    veg: false,
+    spicy: 0
+  };
+
+  const key = item.id;
+  cart.set(key, {
+    item: item,
+    qty: 1,
+    isSet: false
+  });
+
+  input.value = "";
+  updateCartUI();
+  showToast("その他会計 ¥" + val.toLocaleString() + " をカートに追加しました");
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const btn = document.getElementById("customAmountAddBtn");
+  if (btn) {
+    btn.addEventListener("click", addCustomAmountToCart);
+  }
+});
+
+/********** INIT **********/
+renderCategories();
+renderMenu();
+updateCartUI();
+</script>
+</body>
+</html>
