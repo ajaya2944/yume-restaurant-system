@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Bar Orders — Restaurant Essentials</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --bg:#0b0b0b; --card:#111; --text:#f9fafb; --muted:#a3a3a3; --line:#222;
+    --pending:#fde68a; --done:#a7f3d0; --accent:#2563eb; --new:#c7d2fe;
+  }
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:system-ui,Segoe UI,Arial;
+  }
+  header{
+    position:sticky;
+    top:0;
+    background:#101010;
+    border-bottom:1px solid var(--line);
+    padding:12px 16px;
+    z-index:10;
+  }
+  h1{margin:0;font-size:24px}
+  .sub{color:var(--muted);font-size:14px;margin-top:4px}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .chip{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 10px;
+    font-weight:600;
+  }
+  .chip.pending{background:var(--pending);color:#1f2937;border-color:#eab308}
+  .chip.done{background:var(--done);color:#065f46;border-color:#10b981}
+  .chip.new{background:var(--new);color:#1e3a8a;border-color:#6366f1}
+  .toolbar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  button{
+    background:var(--accent);
+    border:0;
+    color:#fff;
+    padding:10px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:14px;
+    transition:all 0.2s;
+  }
+  button:hover{transform:translateY(-1px);box-shadow:0 4px 8px rgba(0,0,0,0.3)}
+  button.secondary{background:#374151}
+  button.success{background:#10b981}
+  button.warning{background:#f59e0b}
+  button.danger{background:#ef4444}
+  main{padding:14px}
+  .panel{
+    max-width:1700px;
+    margin:0 auto;
+    background:#0f0f0f;
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 4px 24px rgba(0,0,0,.4);
+  }
+  table{width:100%;border-collapse:collapse}
+  thead th{
+    position:sticky;
+    top:0;
+    background:#151515;
+    color:#e5e7eb;
+    border-bottom:1px solid var(--line);
+    padding:10px 8px;
+    font-size:16px;
+  }
+  tbody td{
+    border-bottom:1px solid var(--line);
+    padding:10px 8px;
+    font-size:18px;
+  }
+  tbody tr{cursor:pointer;transition:all 0.2s}
+  tbody tr:hover{background:#1a1a1a !important}
+  tbody tr:nth-child(odd){background:#0e0e0e}
+  tbody tr.status-pending{background:#231f0a}
+  tbody tr.status-done{background:#0f231c}
+  tbody tr.locally-done{background:#0a2a1f;border-left:4px solid #10b981}
+  .empty-state{text-align:center;color:var(--muted);padding:20px 8px}
+
+  @keyframes flash {
+    0%{background-color: rgba(99,102,241,.3);}
+    100%{background-color: transparent;}
+  }
+  @keyframes slideIn {
+    from{opacity:0;transform:translateX(-20px);}
+    to{opacity:1;transform:translateX(0);}
+  }
+  tr.just-arrived{
+    animation: slideIn .6s ease-out, flash 2s ease-out .6s;
+  }
+  .action-btn{
+    padding:6px 12px;
+    font-size:12px;
+    border-radius:6px;
+    margin:2px;
+    cursor:pointer;
+    border:none;
+    transition:all .2s;
+  }
+  .complete-btn{background:#10b981;color:#fff;}
+  .complete-btn:hover{background:#059669;}
+  .undo-btn{background:#f59e0b;color:#fff;}
+  .undo-btn:hover{background:#d97706;}
+
+  .tabs{
+    display:flex;
+    gap:5px;
+    margin-bottom:15px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:10px;
+  }
+  .tab{
+    padding:10px 20px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:8px 8px 0 0;
+    cursor:pointer;
+    transition:all .2s;
+  }
+  .tab.active{
+    background:var(--accent);
+    border-color:var(--accent);
+  }
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+
+  .status-message{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#10b981;
+    color:#fff;
+    padding:12px 20px;
+    border-radius:8px;
+    z-index:1000;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .3s;
+    font-size:14px;
+  }
+  .status-message.show{opacity:1;}
+
+  .quick-actions{
+    display:flex;
+    gap:10px;
+    margin-bottom:15px;
+    flex-wrap:wrap;
+  }
+  .current-time{
+    position:fixed;
+    top:10px;
+    right:10px;
+    background:rgba(0,0,0,.7);
+    color:var(--muted);
+    padding:8px 12px;
+    border-radius:6px;
+    font-size:14px;
+    z-index:100;
+  }
+  button.active{background:var(--accent);border:2px solid #fff;}
+
+  .refresh-indicator{
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    background:#111;
+    color:var(--muted);
+    padding:8px 12px;
+    border-radius:6px;
+    font-size:13px;
+    border:1px solid var(--line);
+    opacity:1;
+    transition:opacity .2s;
+  }
+
+  .small{
+    margin-top:8px;
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  .reports-panel{
+    max-width:900px;
+    margin:0 auto;
+    background:#0f0f0f;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    box-shadow:0 4px 24px rgba(0,0,0,.4);
+  }
+  .reports-panel h3{margin-top:0;margin-bottom:12px;}
+  .date-selector{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+  .stats-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:12px;
+  }
+  .stat-card{
+    background:#111827;
+    border-radius:10px;
+    padding:12px;
+    border:1px solid var(--line);
+  }
+  .stat-label{
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .stat-value{
+    font-size:24px;
+    font-weight:700;
+  }
+
+  @media (max-width:1024px){
+    body{font-size:16px}
+    header{padding:10px}
+    h1{font-size:20px}
+    .row{flex-direction:column;align-items:flex-start}
+    .toolbar{
+      margin-left:0;
+      margin-top:10px;
+      width:100%;
+      justify-content:space-between;
+    }
+    button{
+      padding:12px 16px;
+      font-size:16px;
+      flex:1;
+      min-width:0;
+    }
+    .chips{
+      width:100%;
+      justify-content:space-between;
+      margin-top:10px;
+    }
+    .chip{flex:1;text-align:center;min-width:0}
+    main{padding:10px}
+    table{font-size:16px}
+    thead th,tbody td{padding:12px 6px}
+    .tabs{flex-wrap:wrap}
+    .tab{flex:1;text-align:center;min-width:120px}
+    .action-btn{
+      padding:10px 14px;
+      font-size:14px;
+      width:100%;
+    }
+    .quick-actions{flex-direction:column}
+    .quick-actions button{width:100%}
+    .date-selector{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+<div class="current-time" id="currentTime"></div>
+
+<header>
+  <div class="row">
+    <div>
+      <h1>🍹 Bar Orders — Restaurant Control</h1>
+      <div class="sub" id="subtitle">Loading…</div>
+      <div class="chips">
+        <div class="chip">Total: <span id="total">0</span></div>
+        <div class="chip pending">Pending: <span id="pending">0</span></div>
+        <div class="chip done">Done: <span id="done">0</span></div>
+        <div class="chip new">New: <span id="newCount">0</span></div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button id="soundBtn" class="secondary">🔇 Sound OFF</button>
+      <button id="markAllDone" class="success">Mark All Done</button>
+      <button id="refreshBtn" class="secondary">Refresh</button>
+      <button id="printBtn">Print</button>
+      <button id="clearCompleted" class="danger">Clear Completed</button>
+      <button id="fullscreenBtn" class="secondary">⛶ Fullscreen</button>
+    </div>
+  </div>
+  <div class="small">
+    💡 Orders marked as DONE will be remembered even after refresh
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <div class="tab active" data-tab="live-view">📊 Live Orders</div>
+    <div class="tab" data-tab="reports">📈 Daily Report</div>
+  </div>
+
+  <div id="live-view" class="tab-content active">
+    <div class="quick-actions">
+      <button id="showPending" class="warning">Show Only Pending</button>
+      <button id="showAll" class="secondary active">Show All Orders</button>
+      <button id="showDone" class="success">Show Only Done</button>
+      <button id="autoRefreshToggle" class="secondary">⏸️ Pause Auto-Refresh</button>
+    </div>
+    
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Table</th>
+            <th>Set</th>
+            <th>Curry</th>
+            <th>Spice</th>
+            <th>Rice/Naan</th>
+            <th>Cheese Naan</th>
+            <th>Drink</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr>
+            <td colspan="10" class="empty-state">No orders found. Click Refresh to load data.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="reports" class="tab-content">
+    <div class="reports-panel">
+      <h3>📋 Daily Order Report</h3>
+      <div class="date-selector">
+        <button id="generateReport" class="success">Generate Today's Report</button>
+        <button id="printReport" class="secondary">Print Report</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-value" id="reportTotal">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" id="reportDone">0</div>
+          <div class="stat-label" id="completionRate">0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" id="reportPending">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="statusMessage" class="status-message"></div>
+<div class="refresh-indicator" id="refreshIndicator">Auto-refresh: <span id="refreshTimer">5</span>s</div>
+
+<script>
+/* ===== CONFIG ===== */
+const SHEET_ID   = "1czLTIypGknJyGLvKrNhyVkcIHkmPWfrS41x6ERtMwxM";
+const SHEET_NAME = "Bar Display";
+const REFRESH_SECONDS = 5;
+
+/* Adjust columns to match your Bar Display sheet:
+   A: Timestamp, B: Table, C: Set, D: Curry, E: Spice,
+   F: Rice/Naan, G: Cheese Naan, H: Drink, I: (optional Status)
+*/
+// ★ ここだけ入れ替えてください
+const COL = {
+  TS: 0,       // A - Timestamp
+  TABLE: 1,    // B - Table
+  SET: 2,      // C - SET_NAME
+  CURRY: 3,    // D - Curry
+  SPICE: 4,    // E - Spice
+  RICE: 5,     // F - RICE_NAAN
+  CHEESE: 6,   // G - CHEESE_NAAN
+  DRINK: 7     // H - Drink
+};
+
+
+const STORAGE_KEY = "barCompletedOrders_v1";
+
+/* ===== STATE ===== */
+let allOrders = [];
+let completedOrders = new Set();
+let soundEnabled = false;
+let audioCtx = null;
+let seenOrders = new Map();
+let showOnlyPending = false;
+let showOnlyDone = false;
+let autoRefreshEnabled = true;
+let refreshInterval = null;
+let refreshTimerInterval = null;
+
+/* ===== DOM ===== */
+const tbody            = document.getElementById("tbody");
+const subtitle         = document.getElementById("subtitle");
+const totalEl          = document.getElementById("total");
+const pendingEl        = document.getElementById("pending");
+const doneEl           = document.getElementById("done");
+const newEl            = document.getElementById("newCount");
+const btnRefresh       = document.getElementById("refreshBtn");
+const btnPrint         = document.getElementById("printBtn");
+const btnSound         = document.getElementById("soundBtn");
+const markAllDoneBtn   = document.getElementById("markAllDone");
+const showPendingBtn   = document.getElementById("showPending");
+const showAllBtn       = document.getElementById("showAll");
+const showDoneBtn      = document.getElementById("showDone");
+const generateReportBtn= document.getElementById("generateReport");
+const printReportBtn   = document.getElementById("printReport");
+const statusMessage    = document.getElementById("statusMessage");
+const fullscreenBtn    = document.getElementById("fullscreenBtn");
+const autoRefreshToggle= document.getElementById("autoRefreshToggle");
+const refreshIndicator = document.getElementById("refreshIndicator");
+const refreshTimer     = document.getElementById("refreshTimer");
+const currentTimeEl    = document.getElementById("currentTime");
+const clearCompletedBtn= document.getElementById("clearCompleted");
+
+/* ===== UTIL ===== */
+const pad = n => String(n).padStart(2,"0");
+const toISODate = d => d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+const toHMS = d => pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+
+function parseAnyDate(val){
+  if (!val) return null;
+  if (val instanceof Date) return val;
+
+  if (typeof val === "string"){
+    // Apps Script JSON style: "Date(2025,9,26,14,26,50)"
+    let m = val.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)/);
+    if (m){
+      const parts = m.slice(1).map(Number);
+      return new Date(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]);
+    }
+    // 10/26/2025 14:26:50 or 10/26/2025
+    m = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+    if (m){
+      const MM = Number(m[1]);
+      const DD = Number(m[2]);
+      const YYYY = Number(m[3]);
+      const hh = m[4] ? Number(m[4]) : 0;
+      const mm = m[5] ? Number(m[5]) : 0;
+      const ss = m[6] ? Number(m[6]) : 0;
+      return new Date(YYYY, MM-1, DD, hh, mm, ss);
+    }
+    const parsed = new Date(val);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+  return null;
+}
+
+/* TABLE helpers */
+function tableDisplay(raw){
+  const v = String(raw || "").trim();
+  if (!v) return "–";
+
+  // handle "1 1x One Curry Lunch Set" → Table 1
+  const m = v.match(/^(\d+)\s/);
+  if (m) return "Table " + m[1];
+
+  return v;
+}
+
+function tableGroupId(raw){
+  const v = String(raw || "").trim();
+  if (!v) return "–";
+  const m = v.match(/^(\d+)\s/);
+  if (m) return m[1];
+  return v;
+}
+
+/* ===== STORAGE ===== */
+function saveCompletedOrders(){
+  try {
+    const arr = Array.from(completedOrders);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  } catch(e) {}
+}
+
+function loadCompletedOrders(){
+  try{
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved){
+      const arr = JSON.parse(saved);
+      completedOrders = new Set(arr);
+    }
+  }catch(e){}
+}
+
+function clearCompletedOrders(){
+  const ok = window.confirm("Clear all completed orders from memory? They will show as pending again.");
+  if (!ok) return;
+  completedOrders.clear();
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+  renderOrders();
+  showStatusMessage("Completed orders cleared");
+}
+
+/* ===== DATA FETCH (GViz JSONP) ===== */
+function fetchGVizJSONP(sheetId, sheetName){
+  return new Promise(function(resolve, reject){
+    const cbName = "bar_cb_" + Date.now() + "_" + Math.floor(Math.random()*1e6);
+
+    function cleanup(script){
+      try{ delete window[cbName]; }catch(e){}
+      if (script && script.parentNode){ script.parentNode.removeChild(script); }
+    }
+
+    window[cbName] = function(json){
+      cleanup(script);
+      resolve(json);
+    };
+
+    const script = document.createElement("script");
+    script.src =
+      "https://docs.google.com/spreadsheets/d/" + sheetId +
+      "/gviz/tq?headers=1&sheet=" + encodeURIComponent(sheetName) +
+      "&tqx=out:json;responseHandler:" + cbName +
+      "&t=" + Date.now();
+    script.onerror = function(){
+      cleanup(script);
+      reject(new Error("Failed to fetch GViz JSONP"));
+    };
+    document.body.appendChild(script);
+  });
+}
+
+function normalize(gviz){
+  const rows = (gviz.table && gviz.table.rows) ? gviz.table.rows : [];
+  return rows.map(function(r){
+    const cells = r.c || [];
+    return cells.map(function(c){
+      if (!c) return "";
+      if ("v" in c && c.v != null) return c.v;
+      if ("f" in c && c.f != null) return c.f;
+      return "";
+    });
+  });
+}
+
+/* ===== KEYS & STATUS ===== */
+function getOrderKey(row){
+  const d = parseAnyDate(row[COL.TS]);
+  const timeKey = d ? d.getTime() : String(row[COL.TS]);
+  const tableId = tableGroupId(row[COL.TABLE]);
+  const setInfo = row[COL.SET] || "";
+  return timeKey + "|" + tableId + "|" + setInfo;
+}
+
+function isOrderCompleted(order){
+  return completedOrders.has(getOrderKey(order));
+}
+
+/* ===== RENDER ===== */
+function renderOrders(){
+  const now = new Date();
+  const todayISO = toISODate(now);
+
+  // filter to today's orders
+  let todayOrders = allOrders.filter(function(o){
+    const d = parseAnyDate(o[COL.TS]);
+    return d && toISODate(d) === todayISO;
+  });
+
+  if (showOnlyPending){
+    todayOrders = todayOrders.filter(function(o){ return !isOrderCompleted(o); });
+  } else if (showOnlyDone){
+    todayOrders = todayOrders.filter(function(o){ return isOrderCompleted(o); });
+  }
+
+  todayOrders.sort(function(a,b){
+    const da = parseAnyDate(a[COL.TS]) || 0;
+    const db = parseAnyDate(b[COL.TS]) || 0;
+    return db - da;
+  });
+
+  const allToday = allOrders.filter(function(o){
+    const d = parseAnyDate(o[COL.TS]);
+    return d && toISODate(d) === todayISO;
+  });
+
+  const total = allToday.length;
+  const doneCount = allToday.filter(isOrderCompleted).length;
+  const pendingCount = total - doneCount;
+
+  totalEl.textContent   = total;
+  pendingEl.textContent = pendingCount;
+  doneEl.textContent    = doneCount;
+
+  const newKeys = [];
+  todayOrders.forEach(function(o){
+    const k = getOrderKey(o);
+    if (!seenOrders.has(k)){
+      newKeys.push(k);
+    }
+  });
+  newEl.textContent = newKeys.length;
+  if (newKeys.length){
+    playNewOrderSound();
+    newKeys.forEach(function(k){ seenOrders.set(k,true); });
+  }
+
+  subtitle.textContent =
+    "Showing " + todayOrders.length + " orders for " + todayISO +
+    (showOnlyPending ? " (Pending Only)" : (showOnlyDone ? " (Done Only)" : ""));
+
+  if (!todayOrders.length){
+    tbody.innerHTML =
+      '<tr><td colspan="10" class="empty-state">' +
+      (showOnlyPending ? "No pending orders found"
+       : showOnlyDone ? "No completed orders found"
+       : "No orders found for today") +
+      "</td></tr>";
+    return;
+  }
+
+  tbody.innerHTML = todayOrders.map(function(order){
+    const d = parseAnyDate(order[COL.TS]);
+    const timeText = d ? toHMS(d) : (order[COL.TS] || "");
+    const done = isOrderCompleted(order);
+    const statusClass = done ? "status-done" : "status-pending";
+    const orderKey = getOrderKey(order);
+    const isNew = newKeys.indexOf(orderKey) !== -1;
+
+    // Extract set name from "1x One Curry Lunch Set"
+    const setFull = order[COL.SET] || "";
+    const setName = setFull.replace(/^\d+\s*\d*x\s*/,"") || setFull;
+
+    return (
+      '<tr class="' + statusClass +
+      (isNew ? " just-arrived" : "") +
+      (done ? " locally-done" : "") +
+      '" data-key="' + orderKey + '">' +
+        "<td>" + timeText + "</td>" +
+        "<td>" + tableDisplay(order[COL.TABLE]) + "</td>" +
+        "<td>" + (setName || "") + "</td>" +
+        "<td>" + (order[COL.CURRY] || "") + "</td>" +
+        "<td>" + (order[COL.SPICE] || "") + "</td>" +
+        "<td>" + (order[COL.RICE] || "") + "</td>" +
+        "<td>" + (order[COL.CHEESE] || "") + "</td>" +
+        "<td>" + (order[COL.DRINK] || "") + "</td>" +
+        "<td>" + (done ? "✅ Done" : "⏳ Pending") + "</td>" +
+        "<td>" +
+          (done
+            ? '<button class="action-btn undo-btn" onclick="markOrderAsPending(\'' + orderKey + '\')">Undo</button>'
+            : '<button class="action-btn complete-btn" onclick="markOrderAsDone(\'' + orderKey + '\')">✓ Done</button>'
+          ) +
+        "</td>" +
+      "</tr>"
+    );
+  }).join("");
+}
+
+/* ===== STATUS MESSAGE ===== */
+function showStatusMessage(text, type){
+  if (!statusMessage) return;
+  statusMessage.textContent = text || "";
+  if (type === "error"){
+    statusMessage.style.background = "#ef4444";
+  } else if (type === "warn"){
+    statusMessage.style.background = "#f59e0b";
+  } else {
+    statusMessage.style.background = "#10b981";
+  }
+  statusMessage.classList.add("show");
+  setTimeout(function(){
+    statusMessage.classList.remove("show");
+  }, 2200);
+}
+
+/* ===== ACTIONS ===== */
+function markOrderAsDone(key){
+  completedOrders.add(key);
+  saveCompletedOrders();
+  renderOrders();
+  playCompleteSound();
+  showStatusMessage("✅ Order marked as DONE!");
+}
+
+function markOrderAsPending(key){
+  completedOrders.delete(key);
+  saveCompletedOrders();
+  renderOrders();
+  showStatusMessage("🔄 Order set to PENDING");
+}
+
+function markAllOrdersAsDone(){
+  const todayISO = toISODate(new Date());
+  allOrders.forEach(function(o){
+    const d = parseAnyDate(o[COL.TS]);
+    if (d && toISODate(d) === todayISO){
+      completedOrders.add(getOrderKey(o));
+    }
+  });
+  saveCompletedOrders();
+  renderOrders();
+  showStatusMessage("All today's orders marked as done!");
+}
+
+/* ===== SOUND ===== */
+btnSound.addEventListener("click", function(){
+  try{
+    if (!audioCtx){
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new Ctx();
+    }
+    if (audioCtx.state === "suspended"){
+      audioCtx.resume();
+    }
+    soundEnabled = !soundEnabled;
+    btnSound.textContent = soundEnabled ? "🔊 Sound ON" : "🔇 Sound OFF";
+  }catch(e){
+    btnSound.textContent = "Audio Blocked";
+  }
+});
+
+function playNewOrderSound(){
+  if (!soundEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.frequency.value = 800;
+  g.gain.setValueAtTime(0.3, now);
+  g.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+  o.start(now);
+  o.stop(now + 0.5);
+}
+
+function playCompleteSound(){
+  if (!soundEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.frequency.value = 600;
+  g.gain.setValueAtTime(0.4, now);
+  g.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+  o.start(now);
+  o.stop(now + 0.3);
+}
+
+/* ===== AUTO REFRESH ===== */
+function startAutoRefresh(){
+  if (refreshInterval) clearInterval(refreshInterval);
+  if (refreshTimerInterval) clearInterval(refreshTimerInterval);
+
+  refreshInterval = setInterval(function(){
+    if (autoRefreshEnabled){
+      btnRefresh.click();
+    }
+  }, REFRESH_SECONDS * 1000);
+
+  let s = REFRESH_SECONDS;
+  refreshTimer.textContent = s;
+  refreshTimerInterval = setInterval(function(){
+    if (!autoRefreshEnabled) return;
+    s -= 1;
+    if (s <= 0) s = REFRESH_SECONDS;
+    refreshTimer.textContent = s;
+  }, 1000);
+}
+
+function toggleAutoRefresh(){
+  autoRefreshEnabled = !autoRefreshEnabled;
+  autoRefreshToggle.textContent =
+    autoRefreshEnabled ? "⏸️ Pause Auto-Refresh" : "▶️ Resume Auto-Refresh";
+  refreshIndicator.style.opacity = autoRefreshEnabled ? "1" : "0.5";
+  if (autoRefreshEnabled){
+    startAutoRefresh();
+  }
+}
+
+/* ===== FULLSCREEN & TABS ===== */
+function toggleFullscreen(){
+  if (!document.fullscreenElement){
+    if (document.documentElement.requestFullscreen){
+      document.documentElement.requestFullscreen();
+      fullscreenBtn.textContent = "⛶ Exit Fullscreen";
+    }
+  } else {
+    if (document.exitFullscreen){
+      document.exitFullscreen();
+      fullscreenBtn.textContent = "⛶ Fullscreen";
+    }
+  }
+}
+
+document.addEventListener("fullscreenchange", function(){
+  if (!document.fullscreenElement){
+    fullscreenBtn.textContent = "⛶ Fullscreen";
+  }
+});
+
+document.querySelectorAll(".tab").forEach(function(tab){
+  tab.addEventListener("click", function(){
+    document.querySelectorAll(".tab").forEach(function(t){ t.classList.remove("active"); });
+    document.querySelectorAll(".tab-content").forEach(function(c){ c.classList.remove("active"); });
+    tab.classList.add("active");
+    const id = tab.getAttribute("data-tab");
+    const pane = document.getElementById(id);
+    if (pane) pane.classList.add("active");
+  });
+});
+
+/* ===== EVENTS ===== */
+btnRefresh.onclick = function(){
+  subtitle.textContent = "Refreshing...";
+  fetchGVizJSONP(SHEET_ID, SHEET_NAME)
+    .then(function(data){
+      allOrders = normalize(data);
+      console.log("Bar orders fetched:", allOrders.length);
+      renderOrders();
+      subtitle.textContent = "Data refreshed successfully";
+    })
+    .catch(function(err){
+      console.error(err);
+      subtitle.textContent = "Error refreshing data";
+      showStatusMessage("Error refreshing data", "error");
+    });
+};
+
+btnPrint.onclick        = function(){ window.print(); };
+printReportBtn.onclick  = function(){ window.print(); };
+markAllDoneBtn.onclick  = markAllOrdersAsDone;
+clearCompletedBtn.onclick = clearCompletedOrders;
+generateReportBtn.onclick = generateReport;
+fullscreenBtn.onclick   = toggleFullscreen;
+autoRefreshToggle.onclick = toggleAutoRefresh;
+
+showPendingBtn.onclick = function(){
+  showOnlyPending = true;
+  showOnlyDone = false;
+  renderOrders();
+  showPendingBtn.classList.add("active");
+  showAllBtn.classList.remove("active");
+  showDoneBtn.classList.remove("active");
+};
+
+showAllBtn.onclick = function(){
+  showOnlyPending = false;
+  showOnlyDone = false;
+  renderOrders();
+  showAllBtn.classList.add("active");
+  showPendingBtn.classList.remove("active");
+  showDoneBtn.classList.remove("active");
+};
+
+showDoneBtn.onclick = function(){
+  showOnlyPending = false;
+  showOnlyDone = true;
+  renderOrders();
+  showDoneBtn.classList.add("active");
+  showPendingBtn.classList.remove("active");
+  showAllBtn.classList.remove("active");
+};
+
+/* ===== REPORT ===== */
+function generateReport(){
+  const todayISO = toISODate(new Date());
+  const reportOrders = allOrders.filter(function(o){
+    const d = parseAnyDate(o[COL.TS]);
+    return d && toISODate(d) === todayISO;
+  });
+  const total = reportOrders.length;
+  const done = reportOrders.filter(isOrderCompleted).length;
+  const pending = total - done;
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  document.getElementById("reportTotal").textContent = total;
+  document.getElementById("reportDone").textContent = done;
+  document.getElementById("reportPending").textContent = pending;
+  document.getElementById("completionRate").textContent = pct + "%";
+
+  showStatusMessage("Today's report: " + done + "/" + total + " completed (" + pct + "%)");
+}
+
+/* ===== INIT ===== */
+function updateCurrentTime(){
+  const now = new Date();
+  currentTimeEl.textContent = toISODate(now) + " " + toHMS(now);
+}
+
+function initializeApp(){
+  loadCompletedOrders();
+  updateCurrentTime();
+  setInterval(updateCurrentTime, 1000);
+  btnRefresh.click();
+  startAutoRefresh();
+}
+
+// expose for inline handlers
+window.markOrderAsDone = markOrderAsDone;
+window.markOrderAsPending = markOrderAsPending;
+
+initializeApp();
+</script>
+</body>
+</html>
