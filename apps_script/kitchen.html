@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Kitchen Orders — Restaurant Essentials</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --bg:#0b0b0b; --card:#111; --text:#f9fafb; --muted:#a3a3a3; --line:#222;
+    --pending:#fde68a; --done:#a7f3d0; --accent:#2563eb; --new:#c7d2fe;
+  }
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Arial}
+  header{position:sticky;top:0;background:#101010;border-bottom:1px solid var(--line);padding:12px 16px;z-index:10}
+  h1{margin:0;font-size:24px}
+  .sub{color:var(--muted);font-size:14px;margin-top:4px}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .chips{display:flex;gap:10px;flex-wrap:wrap}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-weight:600}
+  .chip.pending{background:var(--pending);color:#1f2937;border-color:#eab308}
+  .chip.done{background:var(--done);color:#065f46;border-color:#10b981}
+  .chip.new{background:var(--new);color:#1e3a8a;border-color:#6366f1}
+  .toolbar{margin-left:auto;display:flex;gap:8px}
+  button{background:var(--accent);border:0;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:14px;transition:all 0.2s}
+  button:hover{transform:translateY(-1px);box-shadow:0 4px 8px rgba(0,0,0,0.3)}
+  button.secondary{background:#374151}
+  button.success{background:#10b981}
+  button.warning{background:#f59e0b}
+  button.danger{background:#ef4444}
+  main{padding:14px}
+  .panel{max-width:1700px;margin:0 auto;background:#0f0f0f;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.4)}
+  table{width:100%;border-collapse:collapse}
+  thead th{position:sticky;top:0;background:#151515;color:#e5e7eb;border-bottom:1px solid var(--line);padding:10px 8px;font-size:16px}
+  tbody td{border-bottom:1px solid var(--line);padding:10px 8px;font-size:18px}
+  tbody tr{cursor:pointer;transition:all 0.2s}
+  tbody tr:hover{background:#1a1a1a !important}
+  tbody tr:nth-child(odd){background:#0e0e0e}
+  tbody tr.status-pending{background:#231f0a}
+  tbody tr.status-done{background:#0f231c}
+  tbody tr.selected{box-shadow:inset 0 0 0 2px var(--accent)}
+  tbody tr.locally-done{background:#0a2a1f; border-left:4px solid #10b981}
+  
+  @keyframes flash { 
+    0% { background-color: rgba(99,102,241,.3); }
+    100% { background-color: transparent; }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  tr.just-arrived{
+    animation: slideIn 0.6s ease-out, flash 2s ease-out 0.6s;
+  }
+  
+  .action-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    margin: 2px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .complete-btn {
+    background: #10b981;
+    color: white;
+  }
+  .complete-btn:hover { background: #059669; }
+  .undo-btn {
+    background: #f59e0b;
+    color: white;
+  }
+  .undo-btn:hover { background: #d97706; }
+  
+  .tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 10px;
+  }
+  .tab {
+    padding: 10px 20px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+  
+  .status-message {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #10b981;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .status-message.show {
+    opacity: 1;
+  }
+  
+  .quick-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+  }
+  
+  .current-time {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: var(--muted);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    z-index: 100;
+  }
+  
+  @media (max-width: 1024px) {
+    body { font-size: 16px; }
+    header { padding: 10px; }
+    h1 { font-size: 20px; }
+    .row { flex-direction: column;align-items: flex-start; }
+    .toolbar { margin-left: 0;margin-top: 10px;width: 100%;justify-content: space-between; }
+    button { padding: 12px 16px;font-size: 16px;flex: 1;min-width: 0; }
+    .chips { width: 100%;justify-content: space-between;margin-top: 10px; }
+    .chip { flex: 1;text-align: center;min-width: 0; }
+    main { padding: 10px; }
+    table { font-size: 16px; }
+    thead th, tbody td { padding: 12px 6px; }
+    .tabs { flex-wrap: wrap; }
+    .tab { flex: 1;text-align: center;min-width: 120px; }
+    .action-btn { padding: 10px 14px;font-size: 14px;width: 100%; }
+    .quick-actions { flex-direction: column; }
+    .quick-actions button { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="current-time" id="currentTime"></div>
+
+<header>
+  <div class="row">
+    <div>
+      <h1>🍳 Kitchen Orders — Restaurant Control</h1>
+      <div class="sub" id="subtitle">Loading…</div>
+      <div class="chips">
+        <div class="chip">Total: <span id="total">0</span></div>
+        <div class="chip pending">Pending: <span id="pending">0</span></div>
+        <div class="chip done">Done: <span id="done">0</span></div>
+        <div class="chip new">New: <span id="newCount">0</span></div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button id="soundBtn" class="secondary">🔇 Sound OFF</button>
+      <button id="markAllDone" class="success">Mark All Done</button>
+      <button id="refreshBtn" class="secondary">Refresh</button>
+      <button id="printBtn">Print</button>
+      <button id="clearCompleted" class="danger">Clear Completed</button>
+      <button id="fullscreenBtn" class="secondary">⛶ Fullscreen</button>
+    </div>
+  </div>
+  <div class="small">
+    💡 Orders marked as DONE will be remembered even after refresh
+    <span id="changesIndicator" style="color:#10b981; display:none">• Changes saved</span>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <div class="tab active" data-tab="live-view">📊 Live Orders</div>
+    <div class="tab" data-tab="reports">📈 Daily Report</div>
+  </div>
+
+  <div id="live-view" class="tab-content active">
+    <div class="quick-actions">
+      <button id="showPending" class="warning">Show Only Pending</button>
+      <button id="showAll" class="secondary">Show All Orders</button>
+      <button id="autoRefreshToggle" class="secondary">⏸️ Pause Auto-Refresh</button>
+    </div>
+    
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Table</th>
+            <th>Food</th>
+            <th>Set</th>
+            <th>Spice</th>
+            <th>Rice/Naan</th>
+            <th>Cheese Naan</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr>
+            <td colspan="9" class="empty-state">No orders found. Click Refresh to load data.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="reports" class="tab-content">
+    <div class="reports-panel">
+      <h3>📋 Daily Order Report</h3>
+      <div class="date-selector">
+        <button id="generateReport" class="success">Generate Today's Report</button>
+        <button id="printReport" class="secondary">Print Report</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-value" id="reportTotal">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" id="reportDone">0</div>
+          <div class="stat-label" id="completionRate">0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" id="reportPending">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="statusMessage" class="status-message"></div>
+<div class="refresh-indicator" id="refreshIndicator">Auto-refresh: <span id="refreshTimer">5</span>s</div>
+
+<script>
+/* ===== CONFIG ===== */
+const SHEET_ID = "1czLTIypGknJyGLvKrNhyVkcIHkmPWfrS41x6ERtMwxM";  // 自分のIDに変更OK
+const SHEET_NAME = "Kitchen Display";
+const REFRESH_SECONDS = 5;
+
+const COL = { TS:0, TABLE:1, FOOD:2, SET:3, SPICE:4, RICE:5, CHEESE:6, STATUS:8 };
+
+/* ===== STATE ===== */
+let allOrders = [];
+let completedOrders = new Set();
+let soundEnabled = false;
+let audioCtx = null;
+let seenOrders = new Map();
+let showOnlyPending = false;
+let autoRefreshEnabled = true;
+let refreshInterval;
+let refreshTimerInterval;
+
+/* ===== DOM ===== */
+const tbody = document.getElementById('tbody');
+const subtitle = document.getElementById('subtitle');
+const totalEl = document.getElementById('total');
+const pendingEl = document.getElementById('pending');
+const doneEl = document.getElementById('done');
+const newEl = document.getElementById('newCount');
+const btnRefresh = document.getElementById('refreshBtn');
+const btnPrint = document.getElementById('printBtn');
+const btnSound = document.getElementById('soundBtn');
+const markAllDoneBtn = document.getElementById('markAllDone');
+const showPendingBtn = document.getElementById('showPending');
+const showAllBtn = document.getElementById('showAll');
+const generateReportBtn = document.getElementById('generateReport');
+const printReportBtn = document.getElementById('printReport');
+const statusMessage = document.getElementById('statusMessage');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+const refreshIndicator = document.getElementById('refreshIndicator');
+const refreshTimer = document.getElementById('refreshTimer');
+const currentTimeEl = document.getElementById('currentTime');
+const clearCompletedBtn = document.getElementById('clearCompleted');
+
+/* ===== LOCAL STORAGE ===== */
+function saveCompletedOrders() {
+  const completedArray = Array.from(completedOrders);
+  localStorage.setItem('kitchenCompletedOrders', JSON.stringify(completedArray));
+  console.log('Saved completed orders:', completedArray.length);
+}
+
+function loadCompletedOrders() {
+  try {
+    const saved = localStorage.getItem('kitchenCompletedOrders');
+    if (saved) {
+      const completedArray = JSON.parse(saved);
+      completedOrders = new Set(completedArray);
+      console.log('Loaded completed orders:', completedOrders.size);
+    }
+  } catch (error) {
+    console.error('Error loading completed orders:', error);
+  }
+}
+
+function clearCompletedOrders() {
+  if (confirm('Clear all completed orders from memory? This will show them as pending again.')) {
+    completedOrders.clear();
+    localStorage.removeItem('kitchenCompletedOrders');
+    renderOrders();
+    showStatusMessage('Completed orders cleared', 'success');
+  }
+}
+
+/* ===== UTIL ===== */
+const pad = n => String(n).padStart(2,'0');
+const toISODate = d => d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+const toHMS = d => pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+
+function updateCurrentTime() {
+  const now = new Date();
+  currentTimeEl.textContent = toISODate(now) + " " + toHMS(now);
+}
+
+function showStatusMessage(text, type) {
+  if (type === undefined) type = 'success';
+  statusMessage.textContent = text;
+  statusMessage.style.background = (type === 'success') ? '#10b981' : '#ef4444';
+  statusMessage.classList.add('show');
+  setTimeout(function(){ statusMessage.classList.remove('show'); }, 3000);
+}
+
+function parseAnyDate(val){
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  if (typeof val === "string") {
+    let m = val.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)/);
+    if (m) {
+      const arr = m.slice(1).map(Number);
+      return new Date(arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]);
+    }
+    m = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m){
+      const MM = parseInt(m[1],10);
+      const DD = parseInt(m[2],10);
+      const YYYY = parseInt(m[3],10);
+      return new Date(YYYY, MM-1, DD);
+    }
+  }
+  return null;
+}
+
+function getOrderKey(row) {
+  const timestamp = parseAnyDate(row[COL.TS]);
+  const timeKey = timestamp ? timestamp.getTime() : String(row[COL.TS]);
+  return timeKey + "|" + row[COL.TABLE] + "|" + row[COL.FOOD];
+}
+
+function isOrderCompleted(order) {
+  const orderKey = getOrderKey(order);
+  return completedOrders.has(orderKey);
+}
+
+/* ===== DATA FETCH ===== */
+function fetchGVizJSONP(sheetId, sheetName){
+  return new Promise(function(resolve, reject){
+    const cb = "cb_"+Date.now()+"_"+Math.floor(Math.random()*1e6);
+    window[cb] = function(json){ resolve(json); cleanup(); };
+    function cleanup(){ try{ delete window[cb]; script.remove(); }catch(e){} }
+    const script = document.createElement('script');
+    script.src = "https://docs.google.com/spreadsheets/d/" + sheetId +
+                 "/gviz/tq?headers=1&sheet=" + encodeURIComponent(sheetName) +
+                 "&tqx=out:json;responseHandler:" + cb + "&t=" + Date.now();
+    script.onerror = function(){ cleanup(); reject(new Error("Failed to fetch data")); };
+    document.body.appendChild(script);
+  });
+}
+
+function normalize(gviz){
+  const rows = (gviz.table && gviz.table.rows) ? gviz.table.rows : [];
+  return rows.map(function(r){
+    return (r.c || []).map(function(c){ return (c && 'v' in c ? c.v : ""); });
+  });
+}
+
+/* ===== RENDER ===== */
+function renderOrders() {
+  const todayISO = toISODate(new Date());
+  let todayOrders = allOrders.filter(function(order){
+    const date = parseAnyDate(order[COL.TS]);
+    return date && toISODate(date) === todayISO;
+  });
+
+  if (showOnlyPending) {
+    todayOrders = todayOrders.filter(function(order){ return !isOrderCompleted(order); });
+  }
+
+  todayOrders.sort(function(a, b){
+    const dateA = parseAnyDate(a[COL.TS]) || new Date(0);
+    const dateB = parseAnyDate(b[COL.TS]) || new Date(0);
+    return dateB - dateA;
+  });
+
+  const allTodayOrders = allOrders.filter(function(order){
+    const date = parseAnyDate(order[COL.TS]);
+    return date && toISODate(date) === todayISO;
+  });
+
+  const total = allTodayOrders.length;
+  const done = allTodayOrders.filter(isOrderCompleted).length;
+  const pending = total - done;
+
+  totalEl.textContent = total;
+  pendingEl.textContent = pending;
+  doneEl.textContent = done;
+
+  const newOrderKeys = [];
+  todayOrders.forEach(function(order){
+    const key = getOrderKey(order);
+    if (!seenOrders.has(key)) newOrderKeys.push(key);
+  });
+  newEl.textContent = newOrderKeys.length;
+
+  if (newOrderKeys.length > 0) {
+    playNewOrderSound();
+    newOrderKeys.forEach(function(key){ seenOrders.set(key, true); });
+  }
+
+  const filterText = showOnlyPending ? " (Pending Only)" : "";
+  subtitle.textContent =
+    "Showing " + todayOrders.length + " orders for " + todayISO + filterText;
+
+  if (todayOrders.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="9" class="empty-state">' +
+      (showOnlyPending ? 'No pending orders found' : 'No orders found for today') +
+      '</td></tr>';
+  } else {
+    const rowsHtml = todayOrders.map(function(order){
+      const date = parseAnyDate(order[COL.TS]);
+      const timeText = date ? toHMS(date) : (order[COL.TS] || "");
+      const isDone = isOrderCompleted(order);
+      const statusClass = isDone ? "status-done" : "status-pending";
+      const orderKey = getOrderKey(order);
+      const isNew = newOrderKeys.indexOf(orderKey) !== -1;
+      const rowClasses =
+        statusClass +
+        (isNew ? " just-arrived" : "") +
+        (isDone ? " locally-done" : "");
+
+      var html = "";
+      html += '<tr class="' + rowClasses + '" data-key="' + orderKey + '">';
+      html += '<td>' + (timeText || "") + '</td>';
+      html += '<td>' + (order[COL.TABLE] || "") + '</td>';
+      html += '<td>' + (order[COL.FOOD] || "") + '</td>';
+      html += '<td>' + (order[COL.SET] || "") + '</td>';
+      html += '<td>' + (order[COL.SPICE] || "") + '</td>';
+      html += '<td>' + (order[COL.RICE] || "") + '</td>';
+      html += '<td>' + (order[COL.CHEESE] || "") + '</td>';
+      html += '<td>' + (isDone ? "✅ Done" : "⏳ Pending") + '</td>';
+      html += '<td>';
+      if (isDone) {
+        html += '<button class="action-btn undo-btn" onclick="markOrderAsPending(\'' +
+                orderKey + '\')">Undo</button>';
+      } else {
+        html += '<button class="action-btn complete-btn" onclick="markOrderAsDone(\'' +
+                orderKey + '\')">✓ Done</button>';
+      }
+      html += '</td></tr>';
+      return html;
+    }).join("");
+    tbody.innerHTML = rowsHtml;
+  }
+}
+
+/* ===== ACTIONS ===== */
+function markOrderAsDone(orderKey) {
+  completedOrders.add(orderKey);
+  saveCompletedOrders();
+  renderOrders();
+  playCompleteSound();
+  showStatusMessage('✅ Order marked as DONE!', 'success');
+}
+
+function markOrderAsPending(orderKey) {
+  completedOrders.delete(orderKey);
+  saveCompletedOrders();
+  renderOrders();
+  showStatusMessage('🔄 Order set to PENDING', 'success');
+}
+
+function markAllOrdersAsDone() {
+  const todayISO = toISODate(new Date());
+  const todayOrders = allOrders.filter(function(order){
+    const date = parseAnyDate(order[COL.TS]);
+    return date && toISODate(date) === todayISO;
+  });
+  todayOrders.forEach(function(order){
+    const key = getOrderKey(order);
+    completedOrders.add(key);
+  });
+  saveCompletedOrders();
+  renderOrders();
+  showStatusMessage('All ' + todayOrders.length + ' orders marked as done!', 'success');
+}
+
+/* ===== SOUND ===== */
+btnSound.addEventListener('click', async function () {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+    soundEnabled = !soundEnabled;
+    btnSound.textContent = soundEnabled ? "🔊 Sound ON" : "🔇 Sound OFF";
+  } catch(e) {
+    btnSound.textContent = "Audio Blocked";
+  }
+});
+
+function playNewOrderSound() {
+  if (!soundEnabled || !audioCtx) return;
+  try {
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = 800;
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+    osc.start(now);
+    osc.stop(now + 0.5);
+  } catch(e) {}
+}
+
+function playCompleteSound() {
+  if (!soundEnabled || !audioCtx) return;
+  try {
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = 600;
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  } catch(e) {}
+}
+
+/* ===== AUTO REFRESH ===== */
+function startAutoRefresh() {
+  if (refreshInterval) clearInterval(refreshInterval);
+  if (refreshTimerInterval) clearInterval(refreshTimerInterval);
+
+  refreshInterval = setInterval(function(){
+    if (autoRefreshEnabled) btnRefresh.click();
+  }, REFRESH_SECONDS * 1000);
+
+  let secondsLeft = REFRESH_SECONDS;
+  refreshTimerInterval = setInterval(function(){
+    if (autoRefreshEnabled) {
+      secondsLeft--;
+      if (secondsLeft <= 0) secondsLeft = REFRESH_SECONDS;
+      refreshTimer.textContent = secondsLeft;
+    }
+  }, 1000);
+}
+
+function toggleAutoRefresh() {
+  autoRefreshEnabled = !autoRefreshEnabled;
+  autoRefreshToggle.textContent =
+    autoRefreshEnabled ? "⏸️ Pause Auto-Refresh" : "▶️ Resume Auto-Refresh";
+  refreshIndicator.style.opacity = autoRefreshEnabled ? "1" : "0.5";
+  if (autoRefreshEnabled) startAutoRefresh();
+}
+
+/* ===== FULLSCREEN & TABS ===== */
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(function(err){
+      console.error("Error attempting to enable fullscreen: " + err.message);
+    });
+    fullscreenBtn.textContent = "⛶ Exit Fullscreen";
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+      fullscreenBtn.textContent = "⛶ Fullscreen";
+    }
+  }
+}
+
+document.addEventListener('fullscreenchange', function(){
+  if (!document.fullscreenElement) {
+    fullscreenBtn.textContent = "⛶ Fullscreen";
+  }
+});
+
+document.querySelectorAll('.tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
+    tab.classList.add('active');
+    var tabId = tab.getAttribute('data-tab');
+    document.getElementById(tabId).classList.add('active');
+  });
+});
+
+/* ===== EVENTS ===== */
+btnRefresh.onclick = async function () {
+  try {
+    subtitle.textContent = "Refreshing...";
+    const data = await fetchGVizJSONP(SHEET_ID, SHEET_NAME);
+    allOrders = normalize(data);
+    renderOrders();
+    subtitle.textContent = "Data refreshed successfully";
+  } catch(error) {
+    subtitle.textContent = "Error refreshing data";
+    console.error('Refresh error:', error);
+  }
+};
+
+btnPrint.onclick = function(){ window.print(); };
+printReportBtn.onclick = function(){ window.print(); };
+markAllDoneBtn.onclick = markAllOrdersAsDone;
+clearCompletedBtn.onclick = clearCompletedOrders;
+generateReportBtn.onclick = generateReport;
+fullscreenBtn.onclick = toggleFullscreen;
+autoRefreshToggle.onclick = toggleAutoRefresh;
+
+showPendingBtn.onclick = function(){
+  showOnlyPending = true;
+  renderOrders();
+  showPendingBtn.classList.add('active');
+  showAllBtn.classList.remove('active');
+};
+
+showAllBtn.onclick = function(){
+  showOnlyPending = false;
+  renderOrders();
+  showAllBtn.classList.add('active');
+  showPendingBtn.classList.remove('active');
+};
+
+/* ===== REPORT ===== */
+function generateReport() {
+  const todayISO = toISODate(new Date());
+  const reportOrders = allOrders.filter(function(order){
+    const date = parseAnyDate(order[COL.TS]);
+    return date && toISODate(date) === todayISO;
+  });
+
+  const total = reportOrders.length;
+  const done = reportOrders.filter(isOrderCompleted).length;
+  const pending = total - done;
+  const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  document.getElementById('reportTotal').textContent = total;
+  document.getElementById('reportDone').textContent = done;
+  document.getElementById('reportPending').textContent = pending;
+  document.getElementById('completionRate').textContent = completionRate + "%";
+
+  showStatusMessage(
+    "Today's report: " + done + "/" + total + " completed (" + completionRate + "%)",
+    "success"
+  );
+}
+
+/* ===== INIT ===== */
+function initializeApp() {
+  loadCompletedOrders();
+  updateCurrentTime();
+  setInterval(updateCurrentTime, 1000);
+  btnRefresh.click();
+  startAutoRefresh();
+  console.log('Kitchen Display initialized with permanent storage');
+}
+
+window.markOrderAsDone = markOrderAsDone;
+window.markOrderAsPending = markOrderAsPending;
+
+initializeApp();
+</script>
+</body>
+</html>
